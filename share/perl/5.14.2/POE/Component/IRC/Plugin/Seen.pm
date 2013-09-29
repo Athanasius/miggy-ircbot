@@ -61,7 +61,8 @@ sub S_public {
   my $nick = parse_user $$rfullname;
   my $mynick = $irc->nick_name;
 
-  if ($$rmessage =~ /^(?:\Q$mynick\E[,:])?\s*seen\s+([^ ]+)/) {
+  #if ($$rmessage =~ /^(?:\Q$mynick\E[,:])?\s*seen\s+([^ ]+)/) {
+  if ($$rmessage =~ /^!seen\s+([^ ]+)/) {
   	seen $self, $irc, $1, $$rchannels->[0], $nick
   }
   log_event $self, $nick => "on $$rchannels->[0] saying $$rmessage"
