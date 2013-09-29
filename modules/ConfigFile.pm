@@ -27,10 +27,22 @@ sub new {
     chomp;
     if (/^nickname:\s+(.*)$/i) {
       $config{'nickname'} = $1;
-    } elsif (/^console_port:\s+(.*)$/i) {
-      $config{'console_port'} = $1;
+    } elsif (/^ircname:\s+(.*)$/i) {
+      $config{'ircname'} = $s;
     } elsif (/^channel:\s+(.*)$/i) {
       $config{'channel'} = $1;
+    } elsif (/^ircserver:\s+(.*)$/i) {
+      $config{'ircserver'} = $s;
+    } elsif (/^ircport:\s+(.*)$/i) {
+      $config{'ircport'} = $s;
+    } elsif (/^connect_delay:\s+(.*)$/i) {
+      $config{'connect_delay'} = $s;
+    } elsif (/^console_port:\s+(.*)$/i) {
+      $config{'console_port'} = $1;
+    } elsif (/^console_password:\s+(.*)$/i) {
+      $config{'console_password'} = $s;
+    } elsif (/^seen_filestore:\s+(.*)$/i) {
+      $config{'seen_filestore'} = $s;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }
