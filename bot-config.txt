@@ -1,3 +1,0 @@
-nickname: ^Henri_Lumi^
-channel: #sc
-console_port: 3337
