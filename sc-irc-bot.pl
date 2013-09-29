@@ -8,6 +8,7 @@ use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
+use SCIrcBot::Crowdfund;
 
 my $nickname = '^Lumi^';
 my $irc;
@@ -25,8 +26,9 @@ my $seen_filestore = 'seen_filestore.db';
 POE::Session->create(
   package_states => [
     main => [ qw(_default _start
-      irc_join
       irc_disconnected
+      irc_join
+      irc_public
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail) ]
   ]
 );
@@ -34,6 +36,8 @@ POE::Session->create(
 $poe_kernel->run();
 
 sub _start {
+  my ($kernel, $heap) = @_[KERNEL, HEAP];
+
   connect_to_server();
   $irc->plugin_add( 'Console',
     POE::Component::IRC::Plugin::Console->new(
@@ -55,6 +59,8 @@ sub _start {
   $irc->yield(register => 'all');
   $irc->yield('connect' => { } );
 
+  # Initialise CrowdFund module
+  $crowdfund = new SCIrcBot::Crowdfund;
 }
 
 sub connect_to_server {
@@ -84,12 +90,26 @@ sub irc_join {
   my $channel = $_[ARG1];
   my $irc = $_[SENDER]->get_heap();
 
-  printf "irc_join - Nick: '%s', Channel: '%s'\n", $nick, $channel;
+  #printf "irc_join - Nick: '%s', Channel: '%s'\n", $nick, $channel;
   # only send the message if we were the one joining
   if ($nick eq $irc->nick_name()) {
-    print "irc_join - It's me! Sending greeting...\n";
+    #print "irc_join - It's me! Sending greeting...\n";
     $irc->yield(privmsg => $channel, 'Reporting for duty!');
   }
+}
+
+sub irc_public {
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $channel = $_[ARG1];
+  my $msg = $_[ARG2];
+  my $irc = $_[SENDER]->get_heap();
+
+  if ($msg =~ /^!crowdfund$/ || $msg =~ /^!cf$/) {
+    report_crowdfund($nick, $channel);
+  }
+}
+
+sub report_crowdfund {
 }
 
 sub irc_console_service {
