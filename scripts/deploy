@@ -1,0 +1,23 @@
+#!/bin/bash
+
+FILES="sc-irc-bot.pl"
+DIRS="SCIrcBot/ share/"
+
+# This script lives in dev/scripts, so end up in dev/
+cd `dirname $0`/..
+git checkout master || exit $?
+#scripts/fix-perms
+
+# And now to the live dir
+cd ../live
+git checkout master || exit $?
+git pull ../dev/
+#scripts/fix-perms
+
+echo "Fix any merge conflicts, then hit return"
+read
+
+git checkout live || exit $?
+git merge master || exit $?
+#scripts/fix-perms
+
