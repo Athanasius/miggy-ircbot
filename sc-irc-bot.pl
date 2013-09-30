@@ -4,11 +4,13 @@
 use strict;
 
 use POE;
-use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Qnet::State;
+use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
+use POE::Component::IRC::Plugin::BotCommand;
+
 use SCIrcBot::Crowdfund;
 use SCIrcBot::ConfigFile;
 use POSIX;
@@ -27,7 +29,7 @@ POE::Session->create(
   package_states => [
     main => [ qw(_default _start
       irc_join
-      irc_public
+      irc_botcmd_crowdfund
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail) ]
   ]
 );
@@ -36,6 +38,22 @@ $poe_kernel->run();
 
 sub _start {
   my ($kernel, $heap) = @_[KERNEL ,HEAP];
+
+  $irc->plugin_add('BotCommand',
+    POE::Component::IRC::Plugin::BotCommand->new(
+      Commands => {
+        crowdfund => { 
+          info => 'Takes no arguments, reports current crowdfund data.',
+          aliases => [ 'cf' ],
+        },
+      },
+      In_channels => 1,
+      Addressed => 0,
+      Prefix => '!',
+      Method => 'privmsg',
+    )
+  );
+  $irc->yield(register => qw(botcmd_crowdfund));
 
   $heap->{connector} = POE::Component::IRC::Plugin::Connector->new();
 
@@ -99,10 +117,12 @@ sub irc_public {
   my $channel = $_[ARG1];
   my $msg = $_[ARG2];
   my $irc = $_[SENDER]->get_heap();
+}
 
-  if ($msg =~ /^!crowdfund$/ || $msg =~ /^!cf$/) {
-    $irc->yield('privmsg', $channel, $crowdfund->get_current_cf());
-  }
+sub irc_botcmd_crowdfund {
+  my $channel = $_[ARG1];
+
+  $irc->yield('privmsg', $channel, $crowdfund->get_current_cf());
 }
 
 sub irc_console_service {
