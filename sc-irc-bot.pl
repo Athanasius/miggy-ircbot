@@ -18,7 +18,9 @@ my $config = SCIrcBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
   die "No config!";
 }
-my $lastconnattempt = time() - $config->getconf('connect_delay');
+
+my $crowdfund;
+
 my $irc = POE::Component::IRC::Qnet::State->spawn();
 
 POE::Session->create(
