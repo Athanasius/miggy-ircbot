@@ -1,12 +1,14 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -w -Imodules
 
 use strict;
+use Data::Dumper;
+#use SCIrcBot::ConfigFile;
+use SCIrcBot::Crowdfund;
 
-my $mynick = '^Lumi^';
-my $rmessage = \ '^Lumi^: seen AthanFysh';
+#my $config = SCIrcBot::ConfigFile->new(file => "bot-config.text");
+#print Dumper($config);
 
-if ($$rmessage =~ /^(?:\Q$mynick\E[,:])?\s*seen\s+([^ ]+)/) {
-	print $$rmessage, "\n";
-} else {
-	print "No match\n";
-}
+my $cf = new SCIrcBot::Crowdfund;
+
+print Dumper($cf);
+print $cf->get_current_cf, "\n";

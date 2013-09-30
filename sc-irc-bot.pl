@@ -10,7 +10,7 @@ use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
 use SCIrcBot::Crowdfund;
-use ConfigFile;
+use SCIrcBot::ConfigFile;
 use POSIX;
 use Data::Dumper;
 
@@ -101,11 +101,8 @@ sub irc_public {
   my $irc = $_[SENDER]->get_heap();
 
   if ($msg =~ /^!crowdfund$/ || $msg =~ /^!cf$/) {
-    report_crowdfund($nick, $channel);
+    $irc->yield('privmsg', $channel, $crowdfund->get_current_cf());
   }
-}
-
-sub report_crowdfund {
 }
 
 sub irc_console_service {
