@@ -1,32 +1,29 @@
-#!/usr/bin/perl -w -Ishare/perl/5.14.2
+#!/usr/bin/perl -w -Ishare/perl/5.14.2 -Imodules
 # vim: textwidth=0 wrapmargin=0 shiftwidth=2 tabstop=2 expandtab
 
 use strict;
 
 use POE;
+use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
 use SCIrcBot::Crowdfund;
+use ConfigFile;
+use POSIX;
+use Data::Dumper;
 
-my $nickname = '^Lumi^';
-my $irc;
-my $connect_delay = 60;
-my $lastconnattempt = time() - $connect_delay;
-my $ircname = 'Henri Lumi, the helpful 300i pilot';
-my $ircserver = 'irc.quakenet.org';
-my $ircport = 6667;
-
-my $console_port = 3337;
-my $console_password = 'UnwindLamps';
-
-my $seen_filestore = 'seen_filestore.db';
+my $config = SCIrcBot::ConfigFile->new(file => "bot-config.txt");
+if (!defined($config)) {
+  die "No config!";
+}
+my $lastconnattempt = time() - $config->getconf('connect_delay');
+my $irc = POE::Component::IRC::Qnet::State->spawn();
 
 POE::Session->create(
   package_states => [
     main => [ qw(_default _start
-      irc_disconnected
       irc_join
       irc_public
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail) ]
@@ -36,23 +33,34 @@ POE::Session->create(
 $poe_kernel->run();
 
 sub _start {
-  my ($kernel, $heap) = @_[KERNEL, HEAP];
+  my ($kernel, $heap) = @_[KERNEL ,HEAP];
 
-  connect_to_server();
+  $heap->{connector} = POE::Component::IRC::Plugin::Connector->new();
+
+  $irc->plugin_add( 'Connector' => $heap->{connector} );
+
+  $irc->yield ( connect => {
+      Nick => $config->getconf('nickname'),
+      Server => $config->getconf('ircserver'),
+      Port => $config->getconf('ircport'),
+      Ircname => $config->getconf('ircname'),
+    }
+  );
+
   $irc->plugin_add( 'Console',
     POE::Component::IRC::Plugin::Console->new(
-      bindport => $console_port,
-      password => $console_password,
+      bindport => $config->getconf('console_port'),
+      password => $config->getconf('console_password'),
     )
   );
   $irc->plugin_add('AutoJoin',
     POE::Component::IRC::Plugin::AutoJoin->new(
-      Channels => [ '#sc' ]
+      Channels => [ $config->getconf('channel') ]
     )
   );
   $irc->plugin_add('Seen',
     POE::Component::IRC::Plugin::Seen->new(
-      filename => $seen_filestore
+      filename => $config->getconf('seen_filestore')
     )
   );
 
@@ -63,26 +71,12 @@ sub _start {
   $crowdfund = new SCIrcBot::Crowdfund;
 }
 
-sub connect_to_server {
-  my $kernel = shift;
-  my $session = shift;
-
-  if ((time() - $lastconnattempt) < $connect_delay) {
-    sleep($connect_delay);
-  }
-  $lastconnattempt = time();
-  $irc = POE::Component::IRC::Qnet::State->spawn(
-    Nick => $nickname,
-    Server => $ircserver,
-    Port => $ircport,
-    Ircname => $ircname,
-  ) or die "Failed to spawn IRC connection";
-}
-
-sub irc_disconnected {
+sub irc_kill {
   my $server = $_[ARG0];
+  my $nick = $_[ARG1];
+  my $reason = $_[ARG2];
 
-
+  return;
 }
 
 sub irc_join {
@@ -151,4 +145,9 @@ sub _default {
     }
     print join ' ', @output, "\n";
     return;
+}
+
+sub mylog {
+
+  printf "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), @_;
 }
