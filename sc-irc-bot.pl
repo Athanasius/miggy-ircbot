@@ -4,24 +4,26 @@
 use strict;
 
 use POE;
+use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
 use ConfigFile;
+use POSIX;
+use Data::Dumper;
 
 my $config = SCIrcBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
   die "No config!";
 }
-my $irc;
 my $lastconnattempt = time() - $config->getconf('connect_delay');
+my $irc = POE::Component::IRC::Qnet::State->spawn();
 
 POE::Session->create(
   package_states => [
     main => [ qw(_default _start
       irc_join
-      irc_disconnected
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail) ]
   ]
 );
@@ -29,7 +31,20 @@ POE::Session->create(
 $poe_kernel->run();
 
 sub _start {
-  connect_to_server();
+  my ($kernel, $heap) = @_[KERNEL ,HEAP];
+
+  $heap->{connector} = POE::Component::IRC::Plugin::Connector->new();
+
+  $irc->plugin_add( 'Connector' => $heap->{connector} );
+
+  $irc->yield ( connect => {
+      Nick => $config->getconf('nickname'),
+      Server => $config->getconf('ircserver'),
+      Port => $config->getconf('ircport'),
+      Ircname => $config->getconf('ircname'),
+    }
+  );
+
   $irc->plugin_add( 'Console',
     POE::Component::IRC::Plugin::Console->new(
       bindport => $config->getconf('console_port'),
@@ -52,26 +67,12 @@ sub _start {
 
 }
 
-sub connect_to_server {
-  my $kernel = shift;
-  my $session = shift;
-
-  if ((time() - $lastconnattempt) < $config->getconf('connect_delay')) {
-    sleep($config->getconf('connect_delay'));
-  }
-  $lastconnattempt = time();
-  $irc = POE::Component::IRC::Qnet::State->spawn(
-    Nick => $config->getconf('nickname'),
-    Server => $config->getconf('ircserver'),
-    Port => $config->getconf('ircport'),
-    Ircname => $config->getconf('ircname'),
-  ) or die "Failed to spawn IRC connection";
-}
-
-sub irc_disconnected {
+sub irc_kill {
   my $server = $_[ARG0];
+  my $nick = $_[ARG1];
+  my $reason = $_[ARG2];
 
-
+  return;
 }
 
 sub irc_join {
@@ -126,4 +127,9 @@ sub _default {
     }
     print join ' ', @output, "\n";
     return;
+}
+
+sub mylog {
+
+  printf "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), @_;
 }

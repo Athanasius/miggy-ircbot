@@ -28,21 +28,21 @@ sub new {
     if (/^nickname:\s+(.*)$/i) {
       $config{'nickname'} = $1;
     } elsif (/^ircname:\s+(.*)$/i) {
-      $config{'ircname'} = $s;
+      $config{'ircname'} = $1;
     } elsif (/^channel:\s+(.*)$/i) {
       $config{'channel'} = $1;
     } elsif (/^ircserver:\s+(.*)$/i) {
-      $config{'ircserver'} = $s;
+      $config{'ircserver'} = $1;
     } elsif (/^ircport:\s+(.*)$/i) {
-      $config{'ircport'} = $s;
+      $config{'ircport'} = $1;
     } elsif (/^connect_delay:\s+(.*)$/i) {
-      $config{'connect_delay'} = $s;
+      $config{'connect_delay'} = $1;
     } elsif (/^console_port:\s+(.*)$/i) {
       $config{'console_port'} = $1;
     } elsif (/^console_password:\s+(.*)$/i) {
-      $config{'console_password'} = $s;
+      $config{'console_password'} = $1;
     } elsif (/^seen_filestore:\s+(.*)$/i) {
-      $config{'seen_filestore'} = $s;
+      $config{'seen_filestore'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }
