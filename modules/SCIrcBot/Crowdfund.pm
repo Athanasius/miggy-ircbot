@@ -3,6 +3,8 @@ package SCIrcBot::Crowdfund;
 use LWP;
 use JSON;
 
+my %last_cf = undef;
+
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
@@ -10,9 +12,10 @@ sub new {
 	return $self;
 }
 
-sub get_current_cf {
+sub get_crowdfund {
   my $self = shift;
 
+  my $crowd = undef;
   my $ua = LWP::UserAgent->new;
   my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
   my $json = encode_json(
@@ -28,16 +31,31 @@ sub get_current_cf {
 
   my $res = $ua->request($req);
   if (! $res->is_success) {
-    return "Failed to retrieve crowdfund info: " . $res->status_line;
+    $crowd = { 'error' => "Failed to retrieve crowdfund info: " . $res->status_line };
+    return $crowd;
   }
 
   $json = decode_json($res->content);
-  my $crowd = ${$json}{'data'};
-  return sprintf("Crowdfund Total: \$%s / Fans: %s / Alpha Slots Left: %s",
-    prettyprint(${$crowd}{'funds'} / 100.0),
-    prettyprint(${$crowd}{'fans'}),
-    prettyprint(${$crowd}{'alpha_slots_left'})
-  );
+  $crowd = ${$json}{'data'};
+
+  return $crowd;
+}
+
+sub get_current_cf {
+  my $self = shift;
+
+  my $crowd = get_crowdfund();
+  if (defined($crowd) and defined(${$crowd}{'funds'})) {
+    return sprintf("Crowdfund Total: \$%s / Fans: %s / Alpha Slots Left: %s",
+      prettyprint(${$crowd}{'funds'} / 100.0),
+      prettyprint(${$crowd}{'fans'}),
+      prettyprint(${$crowd}{'alpha_slots_left'})
+    );
+  } elsif (defined($crowd) && defined(${$crowd}{'error'})) {
+    return ${$crowd}{'error'};
+  } else {
+    return "Failed to get crowdfund data, unknown error!";
+  }
 }
 
 sub prettyprint {
