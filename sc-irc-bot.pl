@@ -161,7 +161,7 @@ sub irc_sc_rss_newitems {
 
 mylog("irc_sc_rss_newitems: channel: $channel, #items: $#_");
   for my $i (@_[ARG1..$#_]) {
-    $irc->yield('privmsg', $channel, 'New Comm-Link: "', $i->{'title'}, '" - ', $i->permaLink);
+    $irc->yield('privmsg', $channel, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
   }
 }
 
