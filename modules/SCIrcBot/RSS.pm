@@ -7,10 +7,12 @@ use POE::Component::Client::HTTP;
 use POE::Component::IRC::Plugin qw(:ALL);
 use XML::RSS;
 use HTTP::Request;
+use DBD::SQLite;
 
 our %rss_items;
 our $rss_url;
 our $rss_file;
+our $rss_db;
 
 sub new {
   my ($class, %args) = @_;
@@ -18,7 +20,8 @@ sub new {
   $rss_url = $args{'rss_url'};
   $rss_file = $args{'rss_file'};
 
-printf STDERR "RSS->new\n";
+  $rss_db = DBI->connect("dbi:SQLite:dbname=$rss_file","","");
+
   return $self;
 }
 
@@ -130,58 +133,5 @@ printf STDERR "_PARSE_ITEMS\n";
   undef;
 }
 ###########################################################################
-
-sub get_headlines {
-  my ($kernel, $self, $session, $args) = @_[KERNEL, OBJECT, SESSION, ARG0];
-
-printf STDERR "get_headlines...\n";
-  $kernel->yield('get_headline', $args);
-  undef;
-}
-
-sub get_headline {
-  my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-printf STDERR "get_headline...\n";
-  $kernel->post( $self->{session_id}, '_get_headline', @_[ARG0..$#_] );
-  undef;
-}
-
-sub _get_headline {
-  my ($kernel,$self) = @_[KERNEL,OBJECT];
-printf STDERR "_GET_HEADLINE\n";
-  my %args;
-  if ( ref $_[ARG0] eq 'HASH' ) {
-     %args = %{ $_[ARG0] };
-  } else {
-     %args = @_[ARG0..$#_];
-  }
-  $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
-  $kernel->post( $self->{http_alias}, 'request', '_response', HTTP::Request->new( GET => $rss_url ), \%args );
-  undef;
-}
-
-sub _response {
-  my ($kernel,$self,$request,$response) = @_[KERNEL,OBJECT,ARG0,ARG1];
-  my $args = $request->[1];
-  my @params;
-#printf STDERR "_RESPONSE\n";
-  push @params, $args->{session}; #, '__send_event';
-  my $result = $response->[0];
-  if ( $result->is_success ) {
-      my $str = $result->content;
-      my $rss = XML::RSS->new();
-      eval { $rss->parse($str); };
-      if ($@) {
-  push @params, 'irc_rssheadlines_error', $args, $@;
-      } else {
-  push @params, 'irc_rssheadlines_items', $args;
-  push @params, $_->{'title'} for @{ $rss->{'items'} };
-      }
-  } else {
-  push @params, 'irc_rssheadlines_error', $args, $result->status_line;
-  }
-  $kernel->post( @params );
-  undef;
-}
 
 1;
