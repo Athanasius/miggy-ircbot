@@ -1,3 +1,10 @@
-1) Make Seen.pm notice quits
-2) Make Seen.pm output format better (time ago)
-3) Make the bot use a file for config, for easier dev/live switching
+*) Make Seen.pm notice quits
+*) Make Seen.pm output format better (time ago)
+*) Make !crowdfund command update $last_cf
+*) Rate-limit bot commands like !crowdfund (exclude ops?)
+*) RSS headline checker
+*) Alpha slots watcher
+*) Use stored data to provide funds/alpha rates
+*) Reminders: i.e. Wingman's Hangar
+*) Ship stats
+*) Dev Tracker
