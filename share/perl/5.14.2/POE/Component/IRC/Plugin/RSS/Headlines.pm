@@ -71,6 +71,7 @@ sub get_headline {
 
 sub _get_headline {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
+#printf STDERR "_GET_HEADLINE\n";
   my %args;
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
@@ -79,7 +80,6 @@ sub _get_headline {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
   return unless $args{url};
-  $args{irc_session} = $self->{irc}->session_id();
   $kernel->post( $self->{http_alias}, 'request', '_response', HTTP::Request->new( GET => $args{url} ), \%args );
   undef;
 }
@@ -88,7 +88,8 @@ sub _response {
   my ($kernel,$self,$request,$response) = @_[KERNEL,OBJECT,ARG0,ARG1];
   my $args = $request->[1];
   my @params;
-  push @params, delete $args->{irc_session}, '__send_event';
+#printf STDERR "_RESPONSE\n";
+  push @params, $args->{session}; #, '__send_event';
   my $result = $response->[0];
   if ( $result->is_success ) {
       my $str = $result->content;

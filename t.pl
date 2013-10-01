@@ -1,15 +1,59 @@
-#!/usr/bin/perl -w -Imodules
-
+#!/usr/bin/perl -w -Imodules -Ishare/perl/5.14.2
 use strict;
-use Data::Dumper;
-use SCIrcBot::Crowdfund;
+use warnings;
+use POE qw(Component::IRC Component::IRC::Plugin::RSS::Headlines);
 
-my $cf = new SCIrcBot::Crowdfund;
+my $nickname = 'RSSHead' . $$;
+my $ircname = 'RSSHead the Sailor Bot';
+my $ircserver = 'hako.miggy.org';
+my $port = 4242;
+my $channel = '#sc';
+my $rss_url = 'https://robertsspaceindustries.com/comm-link/rss';
 
-#$cf->{last_cf} = { 'time' => time(),
-#  'funds' => 2099940000,
-#  'fans' => 276999,
-#  'alpha_slots_left' => 10326
-#}
+my $irc = POE::Component::IRC->spawn(
+	    nick => $nickname,
+	    server => $ircserver,
+	    port => $port,
+	    ircname => $ircname,
+	    debug => 0,
+	    plugin_debug => 1,
+	    options => { trace => 0 },
+) or die "Oh noooo! $!";
 
-print $cf->next_funds_threshold(2079940000), "\n";
+POE::Session->create(
+	    package_states => [
+	            'main' => [ qw(_start irc_001 irc_join irc_rssheadlines_items) ],
+	    ],
+);
+
+$poe_kernel->run();
+exit 0;
+
+sub _start {
+	# Create and load our plugin
+	$irc->plugin_add( 'RSSHead' =>
+	    POE::Component::IRC::Plugin::RSS::Headlines->new() );
+
+	$irc->yield( register => 'all' );
+	$irc->yield( connect => { } );
+	undef;
+}
+
+sub irc_001 {
+	$irc->yield( join => $channel );
+	undef;
+}
+
+sub irc_join {
+	my ($kernel,$sender,$channel) = @_[KERNEL,SENDER,ARG1];
+	print STDERR "$channel $rss_url\n";
+	$kernel->yield( 'get_headline', { url => $rss_url, _channel => $channel } );
+	undef;
+}
+
+sub irc_rssheadlines_items {
+	my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
+	my $channel = delete $args->{_channel};
+	$kernel->post( $sender, 'privmsg', $channel, join(' ', @_[ARG1..$#_] ) );
+	undef;
+}

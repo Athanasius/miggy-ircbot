@@ -13,6 +13,7 @@ use POE::Component::IRC::Plugin::BotCommand;
 
 use SCIrcBot::Crowdfund;
 use SCIrcBot::ConfigFile;
+use SCIrcBot::RSS;
 use POSIX;
 use Data::Dumper;
 
@@ -22,6 +23,7 @@ if (!defined($config)) {
 }
 
 my $crowdfund;
+my $rss_url = 'https://robertsspaceindustries.com/comm-link/rss';
 
 my $irc = POE::Component::IRC::Qnet::State->spawn();
 
@@ -30,10 +32,15 @@ POE::Session->create(
     main => [ qw(_default _start
       irc_join
       irc_botcmd_crowdfund
-      irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail) ]
+      irc_botcmd_rss
+      irc_botcmd_r
+      irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
+      irc_rssheadlines_items
+      irc_rssheadlines_error
+      ) ]
   ],
   inline_states => {
-    crowdfund_check_threshold => \&handle_crowdfund_check_threshold
+    crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
   }
 );
 
@@ -49,6 +56,12 @@ sub _start {
           info => 'Takes no arguments, reports current crowdfund data.',
           aliases => [ 'cf' ],
         },
+        rss => {
+          info => 'Takes no arguments, checks RSI RSS feed.',
+        },
+        r => {
+          info => 'Testing kernel->post',
+        },
       },
       In_channels => 1,
       Addressed => 0,
@@ -56,10 +69,8 @@ sub _start {
       Method => 'privmsg',
     )
   );
-  $irc->yield(register => qw(botcmd_crowdfund));
 
   $heap->{connector} = POE::Component::IRC::Plugin::Connector->new();
-
   $irc->plugin_add( 'Connector' => $heap->{connector} );
 
   $irc->yield ( connect => {
@@ -87,8 +98,10 @@ sub _start {
     )
   );
 
+  $irc->plugin_add('RSSHead',
+    POE::Component::IRC::Plugin::RSS::Headlines->new()
+  );
   $irc->yield(register => 'all');
-  $irc->yield('connect' => { } );
 
   # Initialise CrowdFund module
   $crowdfund = new SCIrcBot::Crowdfund;
@@ -147,6 +160,46 @@ sub handle_crowdfund_check_threshold {
 }
 ###########################################################################
 
+###########################################################################
+# RSS Checking
+###########################################################################
+sub irc_botcmd_rss {
+  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
+
+  $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
+printf STDERR "$channel $rss_url\n";
+  $kernel->yield('get_headline', { url => $rss_url, _channel => $channel, session => $session } );
+  $irc->yield('privmsg', $channel, "Ran RSS query (still waiting for results?)");
+}
+
+sub irc_botcmd_r {
+  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
+
+  $irc->yield('privmsg', $channel, "r -> Attempting to fire !crowdfund instead...");
+  my @params;
+  push @params, $session, 'irc_botcmd_crowdfund', '', $channel;
+printf STDERR "\@params ->\n"; for my $p (@params) { print $p, ", "; } print "\n";
+  $kernel->post( @params );
+  return;
+}
+
+sub irc_rssheadlines_items {
+  my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
+  my $channel = delete $args->{_channel};
+
+mylog("irc_rssheadlines_items: channel: $channel, #items: $#_");
+  $irc->yield('privmsg', $channel, join(' ', @_[ARG1..$#_] ) );
+}
+
+sub irc_rssheadlines_error {
+  my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
+  my $channel = delete $args->{_channel};
+
+mylog("irc_rssheadlines_error...");
+  $kernel->post($sender, 'privmsg', $channel, "RSS Error: " . $error);
+}
+###########################################################################
+
 sub irc_console_service {
   my $getsockname = $_[ARG0];
   return;
@@ -174,22 +227,20 @@ sub irc_console_rw_fail {
 
 sub _default {
     my ($event, $args) = @_[ARG0 .. $#_];
-    my @output = strftime("%Y-%m-%d %H:%M:%S", gmtime());
-    push ( @output , "$event: " );
+    my @output = ( "$event: " );
 
     for my $arg (@$args) {
         if ( ref $arg eq 'ARRAY' ) {
             push( @output, '[' . join(', ', @$arg ) . ']' );
         }
-        else {
+        elsif (defined($arg)) {
             push ( @output, "'$arg'" );
         }
     }
-    print join ' ', @output, "\n";
+    mylog(join ' ', @output);
     return;
 }
 
 sub mylog {
-
-  printf "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), @_;
+  printf STDERR "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), @_;
 }
