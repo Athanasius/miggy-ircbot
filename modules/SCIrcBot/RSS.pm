@@ -8,9 +8,9 @@ use POE::Component::IRC::Plugin qw(:ALL);
 use XML::RSS;
 use HTTP::Request;
 
-my %rss_items;
-my $rss_url;
-my $rss_file;
+our %rss_items;
+our $rss_url;
+our $rss_file;
 
 sub new {
   my ($class, %args) = @_;
@@ -72,10 +72,9 @@ sub _shutdown {
 # is also tied to a database file.
 #
 # get_items(): User-command trigger for testing
-# _get_items(): Literally just trigger retrieval of current items
-# _parse_items(): Literally just stuff these into the hash/DB, marking any
-#                new ones (since last report, not last check).
-# report_new_items(): Report new items to channel, and mark them now as not-new
+# _get_items(): Actually retrieve current items
+# _parse_items(): Triggered when we receive items back.  Check which ones
+#                 are new and fire them at irc_sc_rss_newitems
 ###########################################################################
 sub get_items {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
@@ -103,7 +102,7 @@ sub _parse_items {
   my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
   my $args = $request->[1];
   my @params;
-printf STDERR "PARSE_ITEMS\n";
+printf STDERR "_PARSE_ITEMS\n";
   push @params, $args->{session};
   my $result = $response->[0];
   if ( $result->is_success ) {
@@ -113,15 +112,16 @@ printf STDERR "PARSE_ITEMS\n";
     if ($@) {
       push @params, 'irc_sc_rss_error', $args, $@;
     } else {
+      push @params, 'irc_sc_rss_newitems', $args;
       foreach my $item (@{$rss->{'items'}}) {
         print "title: $item->{'title'}\n";
         print "link: $item->{'link'}\n";
-        foreach my $f (keys(%{$item})) {
-          print " key: $f => $item->{$f} \n";
+        if (!defined($rss_items{$item->{'permaLink'}})) {
+          print " IS NEW!\n";
+          $rss_items{$item->{'permaLink'}} = $item;
+          push @params, $item;
         }
       }
-      #push @params, 'irc_sc_rss_items', $args;
-      #push @params, $_->{'title'} for @{ $rss->{'items'} };
     }
   } else {
     push @params, 'irc_sc_rss_error', $args, $result->status_line;

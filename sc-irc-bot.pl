@@ -33,7 +33,7 @@ POE::Session->create(
       irc_botcmd_crowdfund
       irc_botcmd_rss
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
-      irc_sc_rss_items
+      irc_sc_rss_newitems
       irc_sc_rss_error
       ) ]
   ],
@@ -155,12 +155,14 @@ sub irc_botcmd_rss {
   $kernel->yield('get_items', { _channel => $channel, session => $session } );
 }
 
-sub irc_sc_rss_items {
+sub irc_sc_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
-mylog("irc_sc_rss_items: channel: $channel, #items: $#_");
-  $irc->yield('privmsg', $channel, join(' ', @_[ARG1..$#_] ) );
+mylog("irc_sc_rss_newitems: channel: $channel, #items: $#_");
+  for my $i (@_[ARG1..$#_]) {
+    $irc->yield('privmsg', $channel, 'New Comm-Link: "', $i->{'title'}, '" - ', $i->permaLink);
+  }
 }
 
 sub irc_sc_rss_error {
@@ -168,7 +170,7 @@ sub irc_sc_rss_error {
   my $channel = delete $args->{_channel};
 
 mylog("irc_sc_rss_error...");
-  $kernel->post($sender, 'privmsg', $channel, "RSS Error: " . $error);
+  $irc->yield('privmsg', $channel, "RSS Error: " . $error);
 }
 ###########################################################################
 
