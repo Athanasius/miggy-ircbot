@@ -10,6 +10,7 @@ our %config = (
   'console_port' => 3337,
   'console_password' => 'UnwindLamps',
   'seen_filestore' => 'seen_filestore.db',
+  'crowdfund_funds_check_time' => 300,
 );
 
 sub new {
@@ -43,6 +44,8 @@ sub new {
       $config{'console_password'} = $1;
     } elsif (/^seen_filestore:\s+(.*)$/i) {
       $config{'seen_filestore'} = $1;
+    } elsif (/^crowdfund_funds_check_time:\s+(.*)$/i) {
+      $config{'crowdfund_funds_check_time'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }

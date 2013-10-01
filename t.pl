@@ -2,13 +2,14 @@
 
 use strict;
 use Data::Dumper;
-#use SCIrcBot::ConfigFile;
 use SCIrcBot::Crowdfund;
-
-#my $config = SCIrcBot::ConfigFile->new(file => "bot-config.text");
-#print Dumper($config);
 
 my $cf = new SCIrcBot::Crowdfund;
 
-print Dumper($cf);
-print $cf->get_current_cf, "\n";
+#$cf->{last_cf} = { 'time' => time(),
+#  'funds' => 2099940000,
+#  'fans' => 276999,
+#  'alpha_slots_left' => 10326
+#}
+
+print $cf->next_funds_threshold(2079940000), "\n";

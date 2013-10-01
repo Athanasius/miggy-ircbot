@@ -31,7 +31,10 @@ POE::Session->create(
       irc_join
       irc_botcmd_crowdfund
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail) ]
-  ]
+  ],
+  inline_states => {
+    crowdfund_check_threshold => \&handle_crowdfund_check_threshold
+  }
 );
 
 $poe_kernel->run();
@@ -89,6 +92,8 @@ sub _start {
 
   # Initialise CrowdFund module
   $crowdfund = new SCIrcBot::Crowdfund;
+  # And set up the delayed check
+  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 }
 
 sub irc_kill {
@@ -119,11 +124,28 @@ sub irc_public {
   my $irc = $_[SENDER]->get_heap();
 }
 
+###########################################################################
+# Crowdfund related functions
+###########################################################################
+### The in-channel checking of crowdfund
 sub irc_botcmd_crowdfund {
   my $channel = $_[ARG1];
 
   $irc->yield('privmsg', $channel, $crowdfund->get_current_cf());
 }
+
+### Function to check current/last crowdfund against thresholds
+sub handle_crowdfund_check_threshold {
+  my $kernel = $_[KERNEL];
+
+  my $cf_check = $crowdfund->check_crowdfund();
+  if (defined($cf_check)) {
+    $irc->yield('privmsg', $config->getconf('channel'), $cf_check);
+  }
+
+  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+}
+###########################################################################
 
 sub irc_console_service {
   my $getsockname = $_[ARG0];
@@ -152,7 +174,8 @@ sub irc_console_rw_fail {
 
 sub _default {
     my ($event, $args) = @_[ARG0 .. $#_];
-    my @output = ( "$event: " );
+    my @output = strftime("%Y-%m-%d %H:%M:%S", gmtime());
+    push ( @output , "$event: " );
 
     for my $arg (@$args) {
         if ( ref $arg eq 'ARRAY' ) {

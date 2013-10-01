@@ -3,11 +3,14 @@ package SCIrcBot::Crowdfund;
 use LWP;
 use JSON;
 
-my %last_cf = undef;
+my $last_cf = undef;
 
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
+
+  # Initialise last known value of crowdfund
+  $last_cf = $self->get_crowdfund();
 
 	return $self;
 }
@@ -37,9 +40,81 @@ sub get_crowdfund {
 
   $json = decode_json($res->content);
   $crowd = ${$json}{'data'};
+  ${$crowd}{'time'} = time();
 
   return $crowd;
 }
+
+###########################################################################
+# check_crowdfund
+#
+# Retrieve current crowdfund data and then compare to a stored value.
+# Report if the any aspect passed a threshold.
+###########################################################################
+sub check_crowdfund {
+  my $self = shift;
+  my $report = undef;
+
+  my $new_cf = get_crowdfund();
+  if (!defined($new_cf) || defined(${$new_cf}{'error'})) {
+    $report = "Crowdfunds check, error: " . ${$new_cf}{'error'};
+    return $report;
+  }
+
+# Funds passed a threshold ?
+  my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
+  if (${$new_cf}{'funds'} > $funds_t) {
+    # Report to channel
+    $report = "Crowdfund just passed \$" . prettyprint($funds_t) ." !";
+  }
+
+# Finish
+  $last_cf = $new_cf;
+  return $report;
+}
+
+# Select a next threshold to test, given a current value
+sub next_funds_threshold {
+  my $current = shift;
+
+#printf STDERR "next_funds_threshold(%d)\n", $current;
+  # We'll report at every $100,000 step
+  my $t = int($current / 100000) * 100000 + 100000;
+#printf STDERR "Proposing: %d\n", $t;
+  # Except is that's a round million then we want finer reporting,
+  # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /
+  #                $X,990,000 / $X,995,000 / $X,99[6-9],000
+  if ($t == int($current / 100000000) * 100000000 + 100000000) {
+    # The next $100k is the next $1m as well, so drop back $50k
+    $t = $t - 5000000;
+#printf STDERR "Proposing: %d\n", $t;
+    if ($t < $current) {
+    # This is less than current, so bump to $75k
+      $t += 2500000;
+#printf STDERR "Proposing: %d\n", $t;
+      if ($t < $current) {
+      # This is less than current, so bump to $90k
+        $t += 1500000;
+#printf STDERR "Proposing: %d\n", $t;
+        if ($t < $current) {
+        # This is less than current, so bump to $95k
+          $t += 500000;
+#printf STDERR "Proposing: %d\n", $t;
+          if ($t < $current) {
+          # This iless than current, so bump by $1k increments
+            while ($t < $current) {
+              $t += 100000;
+#printf STDERR "Proposing: %d\n", $t;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return $t;
+}
+###########################################################################
 
 sub get_current_cf {
   my $self = shift;
