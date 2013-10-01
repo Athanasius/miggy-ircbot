@@ -23,7 +23,6 @@ if (!defined($config)) {
 }
 
 my $crowdfund;
-my $rss_url = 'https://robertsspaceindustries.com/comm-link/rss';
 
 my $irc = POE::Component::IRC::Qnet::State->spawn();
 
@@ -33,10 +32,9 @@ POE::Session->create(
       irc_join
       irc_botcmd_crowdfund
       irc_botcmd_rss
-      irc_botcmd_r
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
-      irc_rssheadlines_items
-      irc_rssheadlines_error
+      irc_sc_rss_items
+      irc_sc_rss_error
       ) ]
   ],
   inline_states => {
@@ -58,9 +56,6 @@ sub _start {
         },
         rss => {
           info => 'Takes no arguments, checks RSI RSS feed.',
-        },
-        r => {
-          info => 'Testing kernel->post',
         },
       },
       In_channels => 1,
@@ -98,23 +93,19 @@ sub _start {
     )
   );
 
-  $irc->plugin_add('RSSHead',
-    POE::Component::IRC::Plugin::RSS::Headlines->new()
+  $irc->plugin_add('SCRSS',
+    SCIrcBot::RSS->new(
+      rss_url => $config->getconf('rss_url'),
+      rss_file => $config->getconf('rss_file')
+    )
   );
-  $irc->yield(register => 'all');
+
+  $irc->yield( register => 'all' );
 
   # Initialise CrowdFund module
   $crowdfund = new SCIrcBot::Crowdfund;
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
-}
-
-sub irc_kill {
-  my $server = $_[ARG0];
-  my $nick = $_[ARG1];
-  my $reason = $_[ARG2];
-
-  return;
 }
 
 sub irc_join {
@@ -130,12 +121,6 @@ sub irc_join {
   }
 }
 
-sub irc_public {
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $channel = $_[ARG1];
-  my $msg = $_[ARG2];
-  my $irc = $_[SENDER]->get_heap();
-}
 
 ###########################################################################
 # Crowdfund related functions
@@ -167,35 +152,22 @@ sub irc_botcmd_rss {
   my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
 
   $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
-printf STDERR "$channel $rss_url\n";
-  $kernel->yield('get_headline', { url => $rss_url, _channel => $channel, session => $session } );
-  $irc->yield('privmsg', $channel, "Ran RSS query (still waiting for results?)");
+  $kernel->yield('get_items', { _channel => $channel, session => $session } );
 }
 
-sub irc_botcmd_r {
-  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
-
-  $irc->yield('privmsg', $channel, "r -> Attempting to fire !crowdfund instead...");
-  my @params;
-  push @params, $session, 'irc_botcmd_crowdfund', '', $channel;
-printf STDERR "\@params ->\n"; for my $p (@params) { print $p, ", "; } print "\n";
-  $kernel->post( @params );
-  return;
-}
-
-sub irc_rssheadlines_items {
+sub irc_sc_rss_items {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
-mylog("irc_rssheadlines_items: channel: $channel, #items: $#_");
+mylog("irc_sc_rss_items: channel: $channel, #items: $#_");
   $irc->yield('privmsg', $channel, join(' ', @_[ARG1..$#_] ) );
 }
 
-sub irc_rssheadlines_error {
+sub irc_sc_rss_error {
   my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
   my $channel = delete $args->{_channel};
 
-mylog("irc_rssheadlines_error...");
+mylog("irc_sc_rss_error...");
   $kernel->post($sender, 'privmsg', $channel, "RSS Error: " . $error);
 }
 ###########################################################################
@@ -232,8 +204,7 @@ sub _default {
     for my $arg (@$args) {
         if ( ref $arg eq 'ARRAY' ) {
             push( @output, '[' . join(', ', @$arg ) . ']' );
-        }
-        elsif (defined($arg)) {
+        } elsif (defined($arg)) {
             push ( @output, "'$arg'" );
         }
     }
