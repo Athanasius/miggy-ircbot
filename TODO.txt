@@ -8,3 +8,4 @@
 *) Reminders: i.e. Wingman's Hangar
 *) Ship stats
 *) Dev Tracker
+*) Ensure Crowdfund module doesn't block bot - see how RSS module uses a separate POE session

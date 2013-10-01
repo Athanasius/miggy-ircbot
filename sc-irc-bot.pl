@@ -39,6 +39,7 @@ POE::Session->create(
   ],
   inline_states => {
     crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
+    rss_check => \&handle_rss_check,
   }
 );
 
@@ -96,9 +97,10 @@ sub _start {
   $irc->plugin_add('SCRSS',
     SCIrcBot::RSS->new(
       rss_url => $config->getconf('rss_url'),
-      rss_file => $config->getconf('rss_file')
+      rss_file => $config->getconf('rss_filestore')
     )
   );
+  $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
   $irc->yield( register => 'all' );
 
@@ -148,11 +150,19 @@ sub handle_crowdfund_check_threshold {
 ###########################################################################
 # RSS Checking
 ###########################################################################
+sub handle_rss_check {
+  my ($kernel, $session) = @_[KERNEL, SESSION];
+
+  $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+
+  $kernel->delay('rss_check', $config->getconf('rss_check_time'));
+}
+
 sub irc_botcmd_rss {
   my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
 
   $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
-  $kernel->yield('get_items', { _channel => $channel, session => $session } );
+  $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
 }
 
 sub irc_sc_rss_newitems {
@@ -160,9 +170,14 @@ sub irc_sc_rss_newitems {
   my $channel = delete $args->{_channel};
 
 mylog("irc_sc_rss_newitems: channel: $channel, #items: $#_");
-  for my $i (@_[ARG1..$#_]) {
-    $irc->yield('privmsg', $channel, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
+  if (defined($_[ARG1])) {
+    for my $i (@_[ARG1..$#_]) {
+      $irc->yield('privmsg', $channel, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
+    }
+  } elsif (! $args->{quiet}) {
+      $irc->yield('privmsg', $channel, 'No new Comm-links at this time');
   }
+
 }
 
 sub irc_sc_rss_error {

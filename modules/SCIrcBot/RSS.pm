@@ -7,6 +7,7 @@ use POE::Component::Client::HTTP;
 use POE::Component::IRC::Plugin qw(:ALL);
 use XML::RSS;
 use HTTP::Request;
+use DBI;
 use DBD::SQLite;
 
 our %rss_items;
@@ -20,7 +21,13 @@ sub new {
   $rss_url = $args{'rss_url'};
   $rss_file = $args{'rss_file'};
 
+  # Fire up the SQLite DB, and read in current data
   $rss_db = DBI->connect("dbi:SQLite:dbname=$rss_file","","");
+  my $sth = $rss_db->prepare("SELECT * FROM rsi_commlink");
+  $sth->execute();
+  while (my $row = $sth->fetchrow_hashref) {
+    $rss_items{${$row}{'guid'}} = $row;
+  }
 
   return $self;
 }
@@ -40,16 +47,16 @@ sub PCI_register {
   }
   $self->{session_id} = POE::Session->create(
   object_states => [
-     $self => [ qw(_shutdown _start _get_items _parse_items) ],
+     $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items) ],
   ],
   )->ID();
-  $poe_kernel->state( 'get_items', $self );
+  $poe_kernel->state( 'get_rss_items', $self );
   return 1;
 }
 
 sub PCI_unregister {
   my ($self,$irc) = splice @_, 0, 2;
-  $poe_kernel->state( 'get_items' );
+  $poe_kernel->state( 'get_rss_items' );
   $poe_kernel->call( $self->{session_id} => '_shutdown' );
   delete $self->{irc};
   return 1;
@@ -74,38 +81,39 @@ sub _shutdown {
 # Code to handle getting RSS items and storing them in local hash, which
 # is also tied to a database file.
 #
-# get_items(): User-command trigger for testing
-# _get_items(): Actually retrieve current items
-# _parse_items(): Triggered when we receive items back.  Check which ones
+# get_rss_items(): User-command trigger for testing
+# rss_check(): Perform a timed RSS check
+# _get_rss_items(): Actually retrieve current items
+# _parse_rss_items(): Triggered when we receive items back.  Check which ones
 #                 are new and fire them at irc_sc_rss_newitems
 ###########################################################################
-sub get_items {
+sub get_rss_items {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-printf STDERR "GET_ITEMS\n";
-  $kernel->post( $self->{session_id}, '_get_items', @_[ARG0..$#_] );
+#printf STDERR "GET_ITEMS\n";
+  $kernel->post( $self->{session_id}, '_get_rss_items', @_[ARG0..$#_] );
   undef;
 }
 
-sub _get_items {
+sub _get_rss_items {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-printf STDERR "_GET_ITEMS\n";
+#printf STDERR "_GET_ITEMS\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
      %args = @_[ARG0..$#_];
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
-printf STDERR "_GET_ITEMS: posting to http_alias\n";
-  $kernel->post( $self->{http_alias}, 'request', '_parse_items', HTTP::Request->new( GET => $rss_url ), \%args );
+#printf STDERR "_GET_ITEMS: posting to http_alias\n";
+  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new( GET => $rss_url ), \%args );
   undef;
 }
 
-sub _parse_items {
+sub _parse_rss_items {
   my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
   my $args = $request->[1];
   my @params;
-printf STDERR "_PARSE_ITEMS\n";
+#printf STDERR "_PARSE_RSS_ITEMS\n";
   push @params, $args->{session};
   my $result = $response->[0];
   if ( $result->is_success ) {
@@ -115,14 +123,33 @@ printf STDERR "_PARSE_ITEMS\n";
     if ($@) {
       push @params, 'irc_sc_rss_error', $args, $@;
     } else {
+      my $sth = $rss_db->prepare("INSERT INTO rsi_commlink (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
       push @params, 'irc_sc_rss_newitems', $args;
       foreach my $item (@{$rss->{'items'}}) {
-        print "title: $item->{'title'}\n";
-        print "link: $item->{'link'}\n";
+#        print "title: $item->{'title'}\n";
+#        print "link: $item->{'link'}\n";
         if (!defined($rss_items{$item->{'permaLink'}})) {
-          print " IS NEW!\n";
+#          print " IS NEW!\n";
           $rss_items{$item->{'permaLink'}} = $item;
           push @params, $item;
+
+          my %rss_item = ( 'title' => "NULL", 'link' => "NULL", 'description' => "NULL", 'author' => "NULL", 'category' => "NULL", 'comments' => "NULL", 'enclosure' => "NULL", 'guid' => "NULL", 'pubdate' => "NULL", 'source' => "NULL", 'content' => "NULL" );
+          foreach my $f (keys($item)) {
+#            print "Item field: " . $f . " = '" . $item->{$f} . "'\n";
+            if ($f eq "permaLink") {
+              $rss_item{'guid'} = $item->{$f};
+            } elsif ($f eq "pubDate") {
+              $rss_item{'pubdate'} = $item->{$f};
+            } elsif ($f eq "content") {
+              $rss_item{$f} = ${$item->{$f}}{'encoded'};
+#              foreach my $c (keys($item->{$f})) {
+#                print "Content field: " . $c . " = '" . ${$item->{$f}}{$c} . "'\n";
+#              }
+            } else {
+              $rss_item{$f} = $item->{$f};
+            }
+          }
+          $sth->execute($rss_item{'title'}, $rss_item{'link'}, $rss_item{'description'}, $rss_item{'author'}, $rss_item{'category'}, $rss_item{'comments'}, $rss_item{'enclosure'}, $rss_item{'guid'}, $rss_item{'pubdate'}, $rss_item{'source'}, $rss_item{'content'});
         }
       }
     }
