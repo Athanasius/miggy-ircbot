@@ -140,18 +140,6 @@ printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmt
   undef;
 }
 
-###########################################################################
-# check_crowdfund
-#
-# Retrieve current crowdfund data and then compare to a stored value.
-# Report if the any aspect passed a threshold.
-###########################################################################
-sub check_crowdfund {
-  my $self = shift;
-  my $report = undef;
-
-}
-
 # Select a next threshold to test, given a current value
 sub next_funds_threshold {
   # NB: this amount is in cents, not dollars
