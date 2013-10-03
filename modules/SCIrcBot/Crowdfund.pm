@@ -1,27 +1,88 @@
 package SCIrcBot::Crowdfund;
 
-use LWP;
+use strict;
+use warnings;
+use POE;
+use POE::Component::Client::HTTP;
+use POE::Component::IRC::Plugin qw(:ALL);
+use HTTP::Request;
 use JSON;
 use POSIX;
 
-my $last_cf = undef;
+my $last_cf = { 'funds' => 0 };
 
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
 
-  # Initialise last known value of crowdfund
-  $last_cf = $self->get_crowdfund();
-
 	return $self;
 }
 
-sub get_crowdfund {
-  my $self = shift;
+sub PCI_register {
+  my ($self,$irc) = @_;
+  $self->{irc} = $irc;
+  $irc->plugin_register( $self, 'SERVER', qw(spoof) );
+  unless ( $self->{http_alias} ) {   
+    $self->{http_alias} = join('-', 'ua-scircbot', $irc->session_id() );
+    $self->{follow_redirects} ||= 2;
+    POE::Component::Client::HTTP->spawn(
+      Alias           => $self->{http_alias},
+      Timeout         => 30,
+      FollowRedirects => $self->{follow_redirects},
+    );
+  }
+  $self->{session_id} = POE::Session->create(
+    object_states => [
+      $self => [ qw(_shutdown _start _get_crowdfund _parse_crowdfund ) ],
+    ],
+  )->ID();
+  $poe_kernel->state( 'get_crowdfund', $self );
+  return 1;
+}
 
-  my $crowd = undef;
-  my $ua = LWP::UserAgent->new;
+sub PCI_unregister {
+  my ($self,$irc) = splice @_, 0, 2;
+  $poe_kernel->state( 'get_crowdfund' );
+  $poe_kernel->call( $self->{session_id} => '_shutdown' );
+  delete $self->{irc};
+  return 1;
+}
+
+sub _start {
+  my ($kernel,$self) = @_[KERNEL,OBJECT];
+  $self->{session_id} = $_[SESSION]->ID();
+  $kernel->refcount_increment( $self->{session_id}, __PACKAGE__ );
+  undef;
+}
+
+sub _shutdown {
+  my ($kernel,$self) = @_[KERNEL,OBJECT];
+  $kernel->alarm_remove_all();
+  $kernel->refcount_decrement( $self->{session_id}, __PACKAGE__ );
+  $kernel->call( $self->{http_alias} => 'shutdown' );
+  undef;
+}
+
+sub get_crowdfund {
+  my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
+printf STDERR "GET_CROWDFUND\n";
+  $kernel->post( $self->{session_id}, '_get_crowdfund', @_[ARG0..$#_] );
+  undef;
+}
+
+sub _get_crowdfund {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  my %args;
+printf STDERR "_GET_CROWDFUND\n";
+  if ( ref $_[ARG0] eq 'HASH' ) {
+     %args = %{ $_[ARG0] };
+  } else {
+     %args = @_[ARG0..$#_];
+  }
+  $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
+
   my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
+  my $crowd = undef;
   my $json = encode_json(
     {
       'fans' => 'true',
@@ -32,18 +93,50 @@ sub get_crowdfund {
   my $req = HTTP::Request->new('POST', $url);
   $req->header('Content-Type' => 'application/json');
   $req->content($json);
+printf STDERR "_GET_CROWDFUND: posting to http_alias\n";
+  $kernel->post( $self->{http_alias}, 'request', '_parse_crowdfund', $req, \%args );
+  undef;
+}
 
-  my $res = $ua->request($req);
+sub _parse_crowdfund {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+printf STDERR "_PARSE_CROWDFUND\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  my $new_cf = ();
   if (! $res->is_success) {
-    $crowd = { 'error' => "Failed to retrieve crowdfund info: " . $res->status_line };
-    return $crowd;
+printf STDERR "_PARSE_CROWDFUND: res != success: $res->status_line\n";
+    ${$new_cf}{'error'} =  "Failed to retrieve crowdfund info: " . $res->status_line;
+    push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
+  } else {
+printf STDERR "_PARSE_CROWDFUND: res == success\n";
+    push @params, 'irc_sc_crowdfund_success', $args;
+    my $json = decode_json($res->content);
+#printf STDERR "_PARSE_CROWDFUND: got json\n";
+    $new_cf = ${$json}{'data'};
+    ${$new_cf}{'time'} = time();
+#printf STDERR "_PARSE_CROWDFUND: got new_cf\n";
+
+for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
+for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
+printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmtime()), ${$last_cf}{'funds'} / 100.0, ${$new_cf}{'funds'} / 100.0;
+    # Funds passed a threshold ?
+    my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
+    if (${$last_cf}{'funds'} > 0 and ${$new_cf}{'funds'} > $funds_t) {
+      # Report to channel
+      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s and is now \$%s", prettyprint(int($funds_t / 100)), prettyprint(int(${$new_cf}{'funds'} / 100)));
+    }
+    push @params, $new_cf;
+    $last_cf = $new_cf;
   }
 
-  $json = decode_json($res->content);
-  $crowd = ${$json}{'data'};
-  ${$crowd}{'time'} = time();
-
-  return $crowd;
+for my $p (@params) { printf STDERR " param = $p\n"; }
+  $kernel->post(@params);
+  undef;
 }
 
 ###########################################################################
@@ -56,26 +149,6 @@ sub check_crowdfund {
   my $self = shift;
   my $report = undef;
 
-  my $new_cf = get_crowdfund();
-printf STDERR "%s - Checking %d against %d\n",
-  strftime("%Y-%m-%d %H:%M:%S", gmtime()),
-  ${$last_cf}{'funds'} / 100.0,
-  ${$new_cf}{'funds'} / 100.0;
-  if (!defined($new_cf) || defined(${$new_cf}{'error'})) {
-    $report = "Crowdfunds check, error: " . ${$new_cf}{'error'};
-    return $report;
-  }
-
-# Funds passed a threshold ?
-  my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
-  if (${$new_cf}{'funds'} > $funds_t) {
-    # Report to channel
-    $report = sprintf("Crowdfund just passed \$%s and is now \$%s", prettyprint(int($funds_t / 100)), prettyprint(int(${$new_cf}{'funds'} / 100)));
-  }
-
-# Finish
-  $last_cf = $new_cf;
-  return $report;
 }
 
 # Select a next threshold to test, given a current value
@@ -86,6 +159,7 @@ sub next_funds_threshold {
 printf STDERR "next_funds_threshold(%d)\n", $current;
   # We'll report at every $100,000 step
   my $t = int($current / 10000000) * 10000000 + 10000000;
+#$t = int($current / (5 * 100)) * (5 * 100) + (5 * 100);
 printf STDERR "Proposing: %d\n", $t;
   # Except is that's a round million then we want finer reporting,
   # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /

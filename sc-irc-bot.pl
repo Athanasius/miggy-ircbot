@@ -22,8 +22,6 @@ if (!defined($config)) {
   die "No config!";
 }
 
-my $crowdfund;
-
 my $irc = POE::Component::IRC::Qnet::State->spawn();
 
 POE::Session->create(
@@ -31,14 +29,16 @@ POE::Session->create(
     main => [ qw(_default _start
       irc_join
       irc_botcmd_crowdfund
+      irc_sc_crowdfund_success
+      irc_sc_crowdfund_error
       irc_botcmd_rss
-      irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       irc_sc_rss_newitems
       irc_sc_rss_error
+      irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
   inline_states => {
-    crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
+    #crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
     rss_check => \&handle_rss_check,
   }
 );
@@ -46,7 +46,7 @@ POE::Session->create(
 $poe_kernel->run();
 
 sub _start {
-  my ($kernel, $heap) = @_[KERNEL ,HEAP];
+  my ($kernel, $heap, $session) = @_[KERNEL, HEAP, SESSION];
 
   $irc->plugin_add('BotCommand',
     POE::Component::IRC::Plugin::BotCommand->new(
@@ -102,12 +102,15 @@ sub _start {
   );
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
+  $irc->plugin_add('SCCrowdfund',
+    SCIrcBot::Crowdfund->new()
+  );
+  #$kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+
   $irc->yield( register => 'all' );
 
-  # Initialise CrowdFund module
-  $crowdfund = new SCIrcBot::Crowdfund;
   # And set up the delayed check
-  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+# XXX:  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 }
 
 sub irc_join {
@@ -129,21 +132,42 @@ sub irc_join {
 ###########################################################################
 ### The in-channel checking of crowdfund
 sub irc_botcmd_crowdfund {
-  my $channel = $_[ARG1];
+  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
 
-  $irc->yield('privmsg', $channel, $crowdfund->get_current_cf());
+  $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
+  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, quiet => 0 } );
 }
 
 ### Function to check current/last crowdfund against thresholds
 sub handle_crowdfund_check_threshold {
   my $kernel = $_[KERNEL];
 
-  my $cf_check = $crowdfund->check_crowdfund();
-  if (defined($cf_check)) {
-    $irc->yield('privmsg', $config->getconf('channel'), $cf_check);
-  }
+  #$kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
 
-  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+  #$kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+}
+
+sub irc_sc_crowdfund_success {
+  my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
+  my $channel = delete $args->{_channel};
+
+printf STDERR "irc_sc_crowdfund_success:\n";
+  if (defined($_[ARG1])) {
+    my $crowd = $_[ARG1];
+    if (defined(${$crowd}{'error'})) {
+      $irc->yield('privmsg', $channel, ${$crowd}{'error'});
+    } elsif (defined(${$crowd}{'report'})) {
+      $irc->yield('privmsg', $channel, ${$crowd}{'report'});
+    }
+  }
+}
+
+sub irc_sc_crowdfund_error {
+  my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
+  my $channel = delete $args->{_channel};
+
+mylog("irc_sc_crowdfund_error...");
+  $irc->yield('privmsg', $channel, "Crowdfund Error: " . $error);
 }
 ###########################################################################
 
@@ -169,7 +193,6 @@ sub irc_sc_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
-#mylog("irc_sc_rss_newitems: channel: $channel, #items: $#_");
   if (defined($_[ARG1])) {
     for my $i (@_[ARG1..$#_]) {
       $irc->yield('privmsg', $channel, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
@@ -177,7 +200,6 @@ sub irc_sc_rss_newitems {
   } elsif (! $args->{quiet}) {
       $irc->yield('privmsg', $channel, 'No new Comm-links at this time');
   }
-
 }
 
 sub irc_sc_rss_error {
