@@ -29,6 +29,8 @@ POE::Session->create(
   package_states => [
     main => [ qw(_default _start
       irc_join
+      irc_public
+      irc_ctcp_action
       irc_botcmd_crowdfund
       irc_sc_crowdfund_success
       irc_sc_crowdfund_error
@@ -124,6 +126,9 @@ sub _start {
   $irc->yield( register => 'all' );
 }
 
+###########################################################################
+# Responding to IRC events
+###########################################################################
 sub irc_join {
   my $nick = (split /!/, $_[ARG0])[0];
   my $channel = $_[ARG1];
@@ -136,6 +141,21 @@ sub irc_join {
     $irc->yield(privmsg => $channel, 'Reporting for duty!');
   }
 }
+
+#irc_public:  'Athan!athan@hako.miggy.org' [#sc] '!url https://t.co/zugfxL6F91'
+sub irc_public {
+  my ($kernel, $session, $channel, $msg) = @_[KERNEL, SESSION, ARG1, ARG2];
+
+  if ($msg =~ /(^|\s+)(?<url>http[s]{0,1}:\/\/[^\/]+\/[^\s,.]*)([\s,.]|$)/) {
+printf STDERR "irc_public: parsed '%s' from '%s', passing to get_url...\n", $+{'url'}, $msg;
+    $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $+{'url'} } );
+  }
+}
+
+#irc_ctcp_action:  'Athan!athan@hako.miggy.org' [#sc] 'tests with https://twitter.com/'
+sub irc_ctcp_action {
+}
+###########################################################################
 
 
 ###########################################################################
@@ -239,7 +259,7 @@ sub irc_sc_url_success {
 printf STDERR "irc_sc_url_success:\n";
   if (defined($_[ARG1]) and $args->{quiet} == 0) {
     my $title = $_[ARG1];
-    $irc->yield('privmsg', $channel, "Title: '" . $title . "'");
+    $irc->yield('privmsg', $channel, "Title: " . $title);
   }
 }
 
