@@ -164,7 +164,7 @@ sub lookup_url_title {
     if ($url =~ /(?<url>.*)[\.,\?:!]+$/) {
       $url = $+{'url'};
     }
-printf STDERR "irc_public/action: parsed '%s' from '%s', passing to get_url...\n", $+{'url'}, $msg;
+printf STDERR "irc_public/action: parsed '\n%s\n' from '\n%s\n', passing to get_url...\n", $+{'url'}, $msg;
     $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $+{'url'} } );
   }
 }

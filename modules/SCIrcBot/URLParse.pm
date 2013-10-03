@@ -108,7 +108,7 @@ printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
     if ($title) {
       push @params, 'irc_sc_url_success', $args, $title->as_text;
     } else {
-      push @params, 'irc_sc_url_error', $args, "No <title> found";
+      push @params, 'irc_sc_url_error', $args, "No <title> found in URL content";
     }
   }
 
