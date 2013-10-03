@@ -2,10 +2,9 @@
 *) Make Seen.pm output format better (time ago)
 *) Make !crowdfund command update $last_cf
 *) Rate-limit bot commands like !crowdfund (exclude ops?)
-*) RSS headline checker
 *) Alpha slots watcher
 *) Use stored data to provide funds/alpha rates
 *) Reminders: i.e. Wingman's Hangar
 *) Ship stats
 *) Dev Tracker
-*) Ensure Crowdfund module doesn't block bot - see how RSS module uses a separate POE session
+*) Create a Q account for the bot and qauth
