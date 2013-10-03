@@ -38,7 +38,7 @@ POE::Session->create(
       ) ]
   ],
   inline_states => {
-    #crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
+    crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
     rss_check => \&handle_rss_check,
   }
 );
@@ -105,12 +105,12 @@ sub _start {
   $irc->plugin_add('SCCrowdfund',
     SCIrcBot::Crowdfund->new()
   );
-  #$kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  # Get Crowdfund::$last_cf initialised
+  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  # And set up the delayed check
+  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 
   $irc->yield( register => 'all' );
-
-  # And set up the delayed check
-# XXX:  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 }
 
 sub irc_join {
@@ -140,19 +140,19 @@ sub irc_botcmd_crowdfund {
 
 ### Function to check current/last crowdfund against thresholds
 sub handle_crowdfund_check_threshold {
-  my $kernel = $_[KERNEL];
+  my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  #$kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
 
-  #$kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 }
 
 sub irc_sc_crowdfund_success {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
-printf STDERR "irc_sc_crowdfund_success:\n";
-  if (defined($_[ARG1])) {
+#printf STDERR "irc_sc_crowdfund_success:\n";
+  if (defined($_[ARG1]) and $args->{quiet} == 0) {
     my $crowd = $_[ARG1];
     if (defined(${$crowd}{'error'})) {
       $irc->yield('privmsg', $channel, ${$crowd}{'error'});

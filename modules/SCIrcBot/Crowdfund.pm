@@ -65,7 +65,7 @@ sub _shutdown {
 
 sub get_crowdfund {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-printf STDERR "GET_CROWDFUND\n";
+#printf STDERR "GET_CROWDFUND\n";
   $kernel->post( $self->{session_id}, '_get_crowdfund', @_[ARG0..$#_] );
   undef;
 }
@@ -73,7 +73,7 @@ printf STDERR "GET_CROWDFUND\n";
 sub _get_crowdfund {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-printf STDERR "_GET_CROWDFUND\n";
+#printf STDERR "_GET_CROWDFUND\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
@@ -93,7 +93,7 @@ printf STDERR "_GET_CROWDFUND\n";
   my $req = HTTP::Request->new('POST', $url);
   $req->header('Content-Type' => 'application/json');
   $req->content($json);
-printf STDERR "_GET_CROWDFUND: posting to http_alias\n";
+#printf STDERR "_GET_CROWDFUND: posting to http_alias\n";
   $kernel->post( $self->{http_alias}, 'request', '_parse_crowdfund', $req, \%args );
   undef;
 }
@@ -103,17 +103,17 @@ sub _parse_crowdfund {
   my $args = $request->[1];
   my @params;
 
-printf STDERR "_PARSE_CROWDFUND\n";
+#printf STDERR "_PARSE_CROWDFUND\n";
   push @params, $args->{session};
   my $res = $response->[0];
 
   my $new_cf = ();
   if (! $res->is_success) {
-printf STDERR "_PARSE_CROWDFUND: res != success: $res->status_line\n";
+#printf STDERR "_PARSE_CROWDFUND: res != success: $res->status_line\n";
     ${$new_cf}{'error'} =  "Failed to retrieve crowdfund info: " . $res->status_line;
     push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
   } else {
-printf STDERR "_PARSE_CROWDFUND: res == success\n";
+#printf STDERR "_PARSE_CROWDFUND: res == success\n";
     push @params, 'irc_sc_crowdfund_success', $args;
     my $json = decode_json($res->content);
 #printf STDERR "_PARSE_CROWDFUND: got json\n";
@@ -121,20 +121,21 @@ printf STDERR "_PARSE_CROWDFUND: res == success\n";
     ${$new_cf}{'time'} = time();
 #printf STDERR "_PARSE_CROWDFUND: got new_cf\n";
 
-for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
-for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
+#for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
+#for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
 printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmtime()), ${$last_cf}{'funds'} / 100.0, ${$new_cf}{'funds'} / 100.0;
     # Funds passed a threshold ?
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
-    if (${$last_cf}{'funds'} > 0 and ${$new_cf}{'funds'} > $funds_t) {
-      # Report to channel
-      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s and is now \$%s", prettyprint(int($funds_t / 100)), prettyprint(int(${$new_cf}{'funds'} / 100)));
+    if (${$new_cf}{'funds'} > $funds_t) {
+      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", get_current_cf($new_cf));
+    } else {
+      ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
     push @params, $new_cf;
     $last_cf = $new_cf;
   }
 
-for my $p (@params) { printf STDERR " param = $p\n"; }
+#for my $p (@params) { printf STDERR " param = $p\n"; }
   $kernel->post(@params);
   undef;
 }
@@ -156,35 +157,35 @@ sub next_funds_threshold {
   # NB: this amount is in cents, not dollars
   my $current = shift;
 
-printf STDERR "next_funds_threshold(%d)\n", $current;
+#printf STDERR "next_funds_threshold(%d)\n", $current;
   # We'll report at every $100,000 step
   my $t = int($current / 10000000) * 10000000 + 10000000;
 #$t = int($current / (5 * 100)) * (5 * 100) + (5 * 100);
-printf STDERR "Proposing: %d\n", $t;
+printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
   # Except is that's a round million then we want finer reporting,
   # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /
   #                $X,990,000 / $X,995,000 / $X,99[6-9],000
   if ($t == int($current / 100000000) * 100000000 + 100000000) {
     # The next $100k is the next $1m as well, so drop back $50k
     $t = $t - 5000000;
-printf STDERR "Proposing: %d\n", $t;
+printf STDERR "\tProposing: %d\n", $t;
     if ($t < $current) {
     # This is less than current, so bump to $75k
       $t += 2500000;
-printf STDERR "Proposing: %d\n", $t;
+printf STDERR "\tProposing: %d\n", $t;
       if ($t < $current) {
       # This is less than current, so bump to $90k
         $t += 1500000;
-printf STDERR "Proposing: %d\n", $t;
+printf STDERR "\tProposing: %d\n", $t;
         if ($t < $current) {
         # This is less than current, so bump to $95k
           $t += 500000;
-printf STDERR "Proposing: %d\n", $t;
+printf STDERR "\tProposing: %d\n", $t;
           if ($t < $current) {
           # This iless than current, so bump by $1k increments
             while ($t < $current) {
               $t += 100000;
-printf STDERR "Proposing: %d\n", $t;
+printf STDERR "\tProposing: %d\n", $t;
             }
           }
         }
@@ -197,9 +198,8 @@ printf STDERR "Proposing: %d\n", $t;
 ###########################################################################
 
 sub get_current_cf {
-  my $self = shift;
+  my $crowd = shift;
 
-  my $crowd = get_crowdfund();
   if (defined($crowd) and defined(${$crowd}{'funds'})) {
     return sprintf("Crowdfund Total: \$%s / Fans: %s / Alpha Slots Left: %s",
       prettyprint(${$crowd}{'funds'} / 100.0),
