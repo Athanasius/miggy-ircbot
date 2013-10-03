@@ -14,6 +14,7 @@ use POE::Component::IRC::Plugin::BotCommand;
 use SCIrcBot::Crowdfund;
 use SCIrcBot::ConfigFile;
 use SCIrcBot::RSS;
+use SCIrcBot::URLParse;
 use POSIX;
 use Data::Dumper;
 
@@ -35,6 +36,8 @@ POE::Session->create(
       irc_sc_rss_newitems
       irc_sc_rss_error
       irc_botcmd_url
+      irc_sc_url_success
+      irc_sc_url_error
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
@@ -58,6 +61,9 @@ sub _start {
         },
         rss => {
           info => 'Takes no arguments, checks RSI RSS feed.',
+        },
+        url => {
+          info => 'Takes a URL as an argument.'
         },
       },
       In_channels => 1,
@@ -110,6 +116,10 @@ sub _start {
   $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+
+  $irc->plugin_add('SCURLParse',
+    SCIrcBot::URLParse->new()
+  );
 
   $irc->yield( register => 'all' );
 }
@@ -218,22 +228,18 @@ mylog("irc_sc_rss_error...");
 sub irc_botcmd_url {
   my ($kernel, $session, $channel, $url) = @_[KERNEL, SESSION, ARG1, ARG2];
 
-  $irc->yield('privmsg', $channel, "Running URL query, please wait ...");
+  $irc->yield('privmsg', $channel, "Running URL query on '" . $url . "', please wait ...");
   $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $url } );
 }
 
 sub irc_sc_url_success {
-  my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
+  my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
   my $channel = delete $args->{_channel};
 
 printf STDERR "irc_sc_url_success:\n";
   if (defined($_[ARG1]) and $args->{quiet} == 0) {
-    my $crowd = $_[ARG1];
-    if (defined(${$crowd}{'error'})) {
-      $irc->yield('privmsg', $channel, ${$crowd}{'error'});
-    } elsif (defined(${$crowd}{'report'})) {
-      $irc->yield('privmsg', $channel, ${$crowd}{'report'});
-    }
+    my $title = $_[ARG1];
+    $irc->yield('privmsg', $channel, "Title: '" . $title . "'");
   }
 }
 
@@ -242,7 +248,7 @@ sub irc_sc_url_error {
   my $channel = delete $args->{_channel};
 
 mylog("irc_sc_url_error...");
-  $irc->yield('privmsg', $channel, "URL Error: " . $error);
+  $irc->yield('privmsg', $channel, $error);
 }
 ###########################################################################
 
