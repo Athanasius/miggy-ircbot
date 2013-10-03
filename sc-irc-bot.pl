@@ -277,7 +277,7 @@ sub irc_sc_url_success {
 #printf STDERR "irc_sc_url_success:\n";
   if (defined($_[ARG1]) and $args->{quiet} == 0) {
     my $title = $_[ARG1];
-    $irc->yield('privmsg', $channel, "Title: " . $title);
+    $irc->yield('privmsg', $channel, "URL Title: " . $title);
   }
 }
 
