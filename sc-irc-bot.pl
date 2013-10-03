@@ -34,6 +34,7 @@ POE::Session->create(
       irc_botcmd_rss
       irc_sc_rss_newitems
       irc_sc_rss_error
+      irc_botcmd_url
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
@@ -208,6 +209,40 @@ sub irc_sc_rss_error {
 
 mylog("irc_sc_rss_error...");
   $irc->yield('privmsg', $channel, "RSS Error: " . $error);
+}
+###########################################################################
+
+###########################################################################
+# URL Parsing
+###########################################################################
+sub irc_botcmd_url {
+  my ($kernel, $session, $channel, $url) = @_[KERNEL, SESSION, ARG1, ARG2];
+
+  $irc->yield('privmsg', $channel, "Running URL query, please wait ...");
+  $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $url } );
+}
+
+sub irc_sc_url_success {
+  my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
+  my $channel = delete $args->{_channel};
+
+printf STDERR "irc_sc_url_success:\n";
+  if (defined($_[ARG1]) and $args->{quiet} == 0) {
+    my $crowd = $_[ARG1];
+    if (defined(${$crowd}{'error'})) {
+      $irc->yield('privmsg', $channel, ${$crowd}{'error'});
+    } elsif (defined(${$crowd}{'report'})) {
+      $irc->yield('privmsg', $channel, ${$crowd}{'report'});
+    }
+  }
+}
+
+sub irc_sc_url_error {
+  my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
+  my $channel = delete $args->{_channel};
+
+mylog("irc_sc_url_error...");
+  $irc->yield('privmsg', $channel, "URL Error: " . $error);
 }
 ###########################################################################
 

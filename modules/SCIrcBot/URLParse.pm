@@ -62,7 +62,7 @@ sub _shutdown {
 
 sub get_url {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-#printf STDERR "GET_CROWDFUND\n";
+#printf STDERR "GET_URL\n";
   $kernel->post( $self->{session_id}, '_get_url', @_[ARG0..$#_] );
   undef;
 }
@@ -70,7 +70,7 @@ sub get_url {
 sub _get_url {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-#printf STDERR "_GET_CROWDFUND\n";
+#printf STDERR "_GET_URL\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
@@ -78,19 +78,8 @@ sub _get_url {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
-  my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
-  my $crowd = undef;
-  my $json = encode_json(
-    {
-      'fans' => 'true',
-      'funds' => 'true',
-      'alpha_slots' => 'true'
-    }
-  );
-  my $req = HTTP::Request->new('POST', $url);
-  $req->header('Content-Type' => 'application/json');
-  $req->content($json);
-#printf STDERR "_GET_CROWDFUND: posting to http_alias\n";
+  my $req = HTTP::Request->new('GET', $url);
+printf STDERR "_GET_URL: posting to http_alias\n";
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
   undef;
 }
@@ -100,23 +89,20 @@ sub _parse_url {
   my $args = $request->[1];
   my @params;
 
-#printf STDERR "_PARSE_CROWDFUND\n";
+printf STDERR "_PARSE_URL\n";
   push @params, $args->{session};
   my $res = $response->[0];
 
-  my $new_cf = ();
+  my %url = ();
   if (! $res->is_success) {
-#printf STDERR "_PARSE_CROWDFUND: res != success: $res->status_line\n";
-    ${$new_cf}{'error'} =  "Failed to retrieve crowdfund info: " . $res->status_line;
-    push @params, 'irc_sc_url_error', $args, $new_cf;
+printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
+    $url{'error'} =  "Failed to retrieve crowdfund info: " . $res->status_line;
+    push @params, 'irc_sc_url_error', $args, $url;
   } else {
-#printf STDERR "_PARSE_CROWDFUND: res == success\n";
+printf STDERR "_PARSE_URL: res == success\n";
     push @params, 'irc_sc_url_success', $args;
-    my $json = decode_json($res->content);
-#printf STDERR "_PARSE_CROWDFUND: got json\n";
-    $new_cf = ${$json}{'data'};
     ${$new_cf}{'time'} = time();
-#printf STDERR "_PARSE_CROWDFUND: got new_cf\n";
+#printf STDERR "_PARSE_URL: got new_cf\n";
 
 #for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
 #for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
