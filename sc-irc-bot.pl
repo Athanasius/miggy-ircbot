@@ -146,14 +146,27 @@ sub irc_join {
 sub irc_public {
   my ($kernel, $session, $channel, $msg) = @_[KERNEL, SESSION, ARG1, ARG2];
 
-  if ($msg =~ /(^|\s+)(?<url>http[s]{0,1}:\/\/[^\/]+\/[^\s,.]*)([\s,.]|$)/) {
-printf STDERR "irc_public: parsed '%s' from '%s', passing to get_url...\n", $+{'url'}, $msg;
-    $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $+{'url'} } );
-  }
+  lookup_url_title($kernel, $channel, $session, $msg);
 }
 
 #irc_ctcp_action:  'Athan!athan@hako.miggy.org' [#sc] 'tests with https://twitter.com/'
 sub irc_ctcp_action {
+  my ($kernel, $session, $channel, $msg) = @_[KERNEL, SESSION, ARG1, ARG2];
+
+  lookup_url_title($kernel, $channel, $session, $msg);
+}
+
+sub lookup_url_title {
+  my ($kernel, $channel, $session, $msg) = @_;
+
+  if ($msg =~ /(^|[\s,.!\?:]+)(?<url>http[s]{0,1}:\/\/[^\/]+\/[^\s]*)([\s,.!\?:]+|$)/) {
+    my $url = $+{'url'};
+    if ($url =~ /(?<url>.*)[\.,\?:!]+$/) {
+      $url = $+{'url'};
+    }
+printf STDERR "irc_public/action: parsed '%s' from '%s', passing to get_url...\n", $+{'url'}, $msg;
+    $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $+{'url'} } );
+  }
 }
 ###########################################################################
 
@@ -256,7 +269,7 @@ sub irc_sc_url_success {
   my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
   my $channel = delete $args->{_channel};
 
-printf STDERR "irc_sc_url_success:\n";
+#printf STDERR "irc_sc_url_success:\n";
   if (defined($_[ARG1]) and $args->{quiet} == 0) {
     my $title = $_[ARG1];
     $irc->yield('privmsg', $channel, "Title: " . $title);

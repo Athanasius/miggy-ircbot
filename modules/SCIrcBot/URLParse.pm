@@ -63,7 +63,7 @@ sub _shutdown {
 
 sub get_url {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-printf STDERR "GET_URL\n";
+#printf STDERR "GET_URL\n";
   $kernel->post( $self->{session_id}, '_get_url', @_[ARG0..$#_] );
   undef;
 }
@@ -71,7 +71,7 @@ printf STDERR "GET_URL\n";
 sub _get_url {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-printf STDERR "_GET_URL\n";
+#printf STDERR "_GET_URL\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
@@ -80,7 +80,7 @@ printf STDERR "_GET_URL\n";
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
   my $req = HTTP::Request->new('GET', $args{'url'});
-printf STDERR "_GET_URL: posting to http_alias\n";
+#printf STDERR "_GET_URL: posting to http_alias\n";
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
   undef;
 }
@@ -90,7 +90,7 @@ sub _parse_url {
   my $args = $request->[1];
   my @params;
 
-printf STDERR "_PARSE_URL\n";
+#printf STDERR "_PARSE_URL\n";
   push @params, $args->{session};
   my $res = $response->[0];
 
@@ -99,10 +99,10 @@ printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
     my $error =  "Failed to retrieve URL: " . $res->status_line;
     push @params, 'irc_sc_url_error', $args, $error;
   } else {
-printf STDERR "_PARSE_URL: res == success\n";
+#printf STDERR "_PARSE_URL: res == success\n";
 
     my $tree = HTML::TreeBuilder->new;
-    $tree->parse($res->content);
+    $tree->parse($res->decoded_content);
     $tree->eof();
     my $title = $tree->look_down('_tag', 'title');
     if ($title) {
@@ -112,7 +112,7 @@ printf STDERR "_PARSE_URL: res == success\n";
     }
   }
 
-for my $p (@params) { printf STDERR " param = $p\n"; }
+#for my $p (@params) { printf STDERR " param = $p\n"; }
   $kernel->post(@params);
   undef;
 }
