@@ -98,7 +98,7 @@ sub _parse_url {
 #printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
 #printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
     my $error =  "Failed to retrieve URL - ";
-    if ($res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
       $error .= $+{'errornum'} . ": " . $+{'errorstr'};
     } else {
       $error .=  $res->status_line;
