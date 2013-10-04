@@ -58,14 +58,14 @@ sub _start {
     POE::Component::IRC::Plugin::BotCommand->new(
       Commands => {
         crowdfund => { 
-          info => 'Takes no arguments, reports current crowdfund data.',
+          info => 'Takes no arguments, reports current crowdfund data. OPS/VOICE ONLY',
           aliases => [ 'cf' ],
         },
         rss => {
-          info => 'Takes no arguments, checks RSI RSS feed.',
+          info => 'Takes no arguments, checks RSI RSS feed. OPS/VOICE ONLY',
         },
         url => {
-          info => 'Takes a URL as an argument.'
+          info => 'Takes a URL as an argument. OPS/VOICE ONLY'
         },
       },
       In_channels => 1,
