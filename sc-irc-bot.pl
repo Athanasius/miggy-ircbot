@@ -181,8 +181,14 @@ printf STDERR "irc_public/action: parsed '\n%s\n' from '\n%s\n', passing to get_
 ###########################################################################
 ### The in-channel checking of crowdfund
 sub irc_botcmd_crowdfund {
-  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
+  my ($kernel, $session, $sender, $channel) = @_[KERNEL, SESSION, SENDER, ARG1];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
 
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
   $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
   $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, quiet => 0 } );
 }
@@ -232,8 +238,14 @@ sub handle_rss_check {
 }
 
 sub irc_botcmd_rss {
-  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
+  my ($kernel, $session, $sender, $channel) = @_[KERNEL, SESSION, SENDER, ARG1];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
 
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
   $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
   $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
 }
@@ -264,8 +276,14 @@ mylog("irc_sc_rss_error...");
 # URL Parsing
 ###########################################################################
 sub irc_botcmd_url {
-  my ($kernel, $session, $channel, $url) = @_[KERNEL, SESSION, ARG1, ARG2];
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
 
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
   $irc->yield('privmsg', $channel, "Running URL query on '" . $url . "', please wait ...");
   $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $url } );
 }
