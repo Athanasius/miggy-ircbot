@@ -82,7 +82,7 @@ sub _get_crowdfund {
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
   my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
-  $url = 'http://www.miggy.org/test/rsi-cf-test.php';
+#  $url = 'http://www.miggy.org/test/rsi-cf-test.php';
   my $crowd = undef;
   my $json = encode_json(
     {
