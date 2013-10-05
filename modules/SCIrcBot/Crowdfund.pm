@@ -8,6 +8,7 @@ use POE::Component::IRC::Plugin qw(:ALL);
 use HTTP::Request;
 use JSON;
 use POSIX;
+use Data::Dumper;
 
 my $last_cf = { 'funds' => 0 };
 
@@ -81,8 +82,6 @@ sub _get_crowdfund {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
-  my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
-#  $url = 'http://www.miggy.org/test/rsi-cf-test.php';
   my $crowd = undef;
   my $json = encode_json(
     {
@@ -91,7 +90,8 @@ sub _get_crowdfund {
       'alpha_slots' => 'true'
     }
   );
-  my $req = HTTP::Request->new('POST', $url);
+#foreach my $a (keys(%args)) { printf STDERR "arg{%s} = %s\n", $a, $args{$a}; }
+  my $req = HTTP::Request->new('POST', $args{crowdfund_url});
   $req->header('Content-Type' => 'application/json');
   $req->content($json);
 #printf STDERR "_GET_CROWDFUND: posting to http_alias\n";

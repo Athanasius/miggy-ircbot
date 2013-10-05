@@ -115,7 +115,7 @@ sub _start {
     SCIrcBot::Crowdfund->new()
   );
   # Get Crowdfund::$last_cf initialised
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, autocheck => 1, quiet => 1 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 1 } );
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 
@@ -190,14 +190,14 @@ sub irc_botcmd_crowdfund {
     return;
   }
   $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
-  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, qutocheck => 0, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), qutocheck => 0, quiet => 0 } );
 }
 
 ### Function to check current/last crowdfund against thresholds
 sub handle_crowdfund_check_threshold {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, autocheck => 1, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 0 } );
 
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 }
