@@ -82,6 +82,7 @@ sub _get_crowdfund {
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
   my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
+  $url = 'http://www.miggy.org/test/rsi-cf-test.php';
   my $crowd = undef;
   my $json = encode_json(
     {
@@ -114,7 +115,6 @@ sub _parse_crowdfund {
     push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
   } else {
 #printf STDERR "_PARSE_CROWDFUND: res == success\n";
-    push @params, 'irc_sc_crowdfund_success', $args;
     my $json = decode_json($res->content);
 #printf STDERR "_PARSE_CROWDFUND: got json\n";
     $new_cf = ${$json}{'data'};
@@ -126,14 +126,14 @@ sub _parse_crowdfund {
 printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmtime()), ${$last_cf}{'funds'} / 100.0, ${$new_cf}{'funds'} / 100.0;
     # Funds passed a threshold ?
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
-    if (${$new_cf}{'funds'} > $funds_t) {
-printf STDERR "Crowdfund just passed \$%s: %s\n", $funds_t, get_current_cf($new_cf));
+    if ($args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
+printf STDERR "Crowdfund just passed \$%s: %s\n", $funds_t, get_current_cf($new_cf);
       ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", $funds_t, get_current_cf($new_cf));
-    } else {
+    } elsif ($args->{autocheck} != 1) {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
-    push @params, $new_cf;
-for my $p (@params) { printf STDERR " param = $p\n"; }
+    push @params, 'irc_sc_crowdfund_success', $args, $new_cf;
+#for my $p (@params) { printf STDERR " param = $p\n"; }
     $last_cf = $new_cf;
   }
 
