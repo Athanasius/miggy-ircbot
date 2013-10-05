@@ -128,7 +128,7 @@ printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmt
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
     if ($args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
 printf STDERR "Crowdfund just passed \$%s: %s\n", $funds_t, get_current_cf($new_cf);
-      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", $funds_t, get_current_cf($new_cf));
+      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", previous_funds_threshold(${$new_cf}{'funds'}), get_current_cf($new_cf));
     } elsif ($args->{autocheck} != 1) {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
@@ -150,37 +150,65 @@ sub next_funds_threshold {
   # We'll report at every $100,000 step
   my $t = int($current / 10000000) * 10000000 + 10000000;
 #$t = int($current / (5 * 100)) * (5 * 100) + (5 * 100);
-printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
+#printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
   # Except is that's a round million then we want finer reporting,
   # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /
   #                $X,990,000 / $X,995,000 / $X,99[6-9],000
   if ($t == int($current / 100000000) * 100000000 + 100000000) {
     # The next $100k is the next $1m as well, so drop back $50k
     $t = $t - 5000000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
     if ($t < $current) {
     # This is less than current, so bump to $75k
       $t += 2500000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
       if ($t < $current) {
       # This is less than current, so bump to $90k
         $t += 1500000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
         if ($t < $current) {
         # This is less than current, so bump to $95k
           $t += 500000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
           if ($t < $current) {
           # This iless than current, so bump by $1k increments
             while ($t < $current) {
               $t += 100000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
             }
           }
         }
       }
     }
   }
+
+printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
+  return $t;
+}
+
+# Select the previous threshold that we most recently passed
+sub previous_funds_threshold {
+  # NB: this amount is in cents, not dollars
+  my $current = shift;
+
+  # We'll report at every $100,000 step
+  # Except is that's a round million then we want finer reporting,
+  # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /
+  #                $X,990,000 / $X,995,000 / $X,99[6-9],000
+  # Thus for this we start at the current million, add 999000, then work
+  # backwards.
+  my $t = int($current / 100000000) * 100000000 + 99900000;
+#printf STDERR "previous_funds_threshold(%d), proposing %d\n", $current, $t;
+  my @steps = (50, 25, 15, 5, 1, 1, 1, 1);
+  while (@steps and $current < $t) {
+    $t -= 100000 * pop @steps;
+#printf STDERR "\tProposing: %d\n", $t;
+  }
+  while ($current < $t) {
+    $t -= 10000000; # Drop another 100k
+#printf STDERR "\tProposing: %d\n", $t;
+  }
+printf STDERR "previous_funds_threshold(%d), proposing %d\n", $current, $t;
 
   return $t;
 }
