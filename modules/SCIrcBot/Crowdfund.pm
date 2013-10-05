@@ -127,15 +127,16 @@ printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmt
     # Funds passed a threshold ?
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
     if (${$new_cf}{'funds'} > $funds_t) {
+printf STDERR "Crowdfund just passed \$%s: %s\n", $funds_t, get_current_cf($new_cf));
       ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", $funds_t, get_current_cf($new_cf));
     } else {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
     push @params, $new_cf;
+for my $p (@params) { printf STDERR " param = $p\n"; }
     $last_cf = $new_cf;
   }
 
-#for my $p (@params) { printf STDERR " param = $p\n"; }
   $kernel->post(@params);
   undef;
 }

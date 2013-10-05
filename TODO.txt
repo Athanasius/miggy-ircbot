@@ -9,3 +9,4 @@
 *) Dev Tracker
 *) Create a Q account for the bot and qauth
 *) Watch for new youtube videos (WMH)
+*) Check content-type before parsing URL content
