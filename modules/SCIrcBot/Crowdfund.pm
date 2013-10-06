@@ -127,8 +127,8 @@ printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmt
     # Funds passed a threshold ?
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
     if ($args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
-printf STDERR "Crowdfund just passed \$%s: %s\n", $funds_t, get_current_cf($new_cf);
-      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", previous_funds_threshold(${$new_cf}{'funds'}), get_current_cf($new_cf));
+printf STDERR "Crowdfund just passed \$%s: %s\n", prettyprint(int($funds_t) / 100), get_current_cf($new_cf);
+      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", prettyprint(int(previous_funds_threshold(${$new_cf}{'funds'})) / 100), get_current_cf($new_cf));
     } elsif ($args->{autocheck} != 1) {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
