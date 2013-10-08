@@ -190,7 +190,7 @@ sub irc_botcmd_crowdfund {
     return;
   }
   $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
-  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), qutocheck => 0, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 0, quiet => 0 } );
 }
 
 ### Function to check current/last crowdfund against thresholds
