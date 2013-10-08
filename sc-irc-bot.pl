@@ -327,9 +327,10 @@ sub irc_botcmd_alarm {
 }
 
 sub irc_sc_alarm_announce {
-  my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
-  my $channel = delete $args->{_channel};
+  my ($kernel, $sender, $alarm) = @_[KERNEL, SENDER, ARG0];
+  my $channel = $config->getconf('channel');
 
+  $irc->yield('privmsg', $channel, "Alarm '" . $alarm . "' triggered");
 }
 ###########################################################################
 

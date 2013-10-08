@@ -5,11 +5,9 @@ use warnings;
 use Data::Dumper;
 
 use POSIX qw/strftime/;
-use Date::Language;
-use Date::Parse;
-my $lang = Date::Language->new("English");
 
-$ENV{'TZ'} = 'CST6CDT';
-my $t = $lang->str2time("Thu Oct 10 18:30:00");
-$ENV{'TZ'} = 'UTC';
-print strftime("%Y-%m-%d %H:%M:%S %Z\n", localtime($t));
+my $dayofweek = 'Fri';
+my @days = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun');
+my @today = grep { $days[$_] eq $dayofweek } 0..$#days;
+
+print Dumper(@today), "\n";
