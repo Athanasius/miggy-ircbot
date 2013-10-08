@@ -15,7 +15,8 @@ use SCIrcBot::Crowdfund;
 use SCIrcBot::ConfigFile;
 use SCIrcBot::RSS;
 use SCIrcBot::URLParse;
-use POSIX;
+use SCIrcBot::AlarmClock;
+use POSIX qw/strftime/;
 use Data::Dumper;
 
 my $config = SCIrcBot::ConfigFile->new(file => "bot-config.txt");
@@ -31,15 +32,10 @@ POE::Session->create(
       irc_join
       irc_public
       irc_ctcp_action
-      irc_botcmd_crowdfund
-      irc_sc_crowdfund_success
-      irc_sc_crowdfund_error
-      irc_botcmd_rss
-      irc_sc_rss_newitems
-      irc_sc_rss_error
-      irc_botcmd_url
-      irc_sc_url_success
-      irc_sc_url_error
+      irc_botcmd_crowdfund irc_sc_crowdfund_success irc_sc_crowdfund_error
+      irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error
+      irc_botcmd_url irc_sc_url_success irc_sc_url_error
+      irc_botcmd_alarm irc_sc_alarm_announce
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
@@ -121,6 +117,10 @@ sub _start {
 
   $irc->plugin_add('SCURLParse',
     SCIrcBot::URLParse->new()
+  );
+
+  $irc->plugin_add('SCAlarmClock',
+    SCIrcBot::AlarmClock->new()
   );
 
   $irc->yield( register => 'all' );
@@ -307,6 +307,29 @@ sub irc_sc_url_error {
 
 mylog("irc_sc_url_error...");
   $irc->yield('privmsg', $channel, $error);
+}
+###########################################################################
+
+###########################################################################
+# Alarm Clock
+###########################################################################
+sub irc_botcmd_alarm {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
+
+  $irc->yield('privmsg', $channel, "Alarm test command");
+}
+
+sub irc_sc_alarm_announce {
+  my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
+  my $channel = delete $args->{_channel};
+
 }
 ###########################################################################
 

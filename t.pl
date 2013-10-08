@@ -4,17 +4,12 @@ use warnings;
 
 use Data::Dumper;
 
-my @steps = (50, 25, 15, 5, 1, 1, 1, 1);
+use POSIX qw/strftime/;
+use Date::Language;
+use Date::Parse;
+my $lang = Date::Language->new("English");
 
-my $current = 2099732845;
-my $t = 2099900000;
-while (@steps and $current < $t) {
-  my $s = pop @steps;
-  printf STDERR "\tStep: %d\n", $s;
-  $t -= 100000 * $s;
-  printf STDERR "\tProposing: %d\n", $t;
-}
-  while ($current < $t) {
-        $t -= 10000000; # Drop another 100k
-        printf STDERR "\tProposing: %d\n", $t;
-          }
+$ENV{'TZ'} = 'CST6CDT';
+my $t = $lang->str2time("Thu Oct 10 18:30:00");
+$ENV{'TZ'} = 'UTC';
+print strftime("%Y-%m-%d %H:%M:%S %Z\n", localtime($t));
