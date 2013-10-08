@@ -121,16 +121,18 @@ sub _parse_crowdfund {
     ${$new_cf}{'time'} = time();
 #printf STDERR "_PARSE_CROWDFUND: got new_cf\n";
 
+    if (${$last_cf}{'funds'} > 0) {
 #for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
 #for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
 printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmtime()), ${$last_cf}{'funds'} / 100.0, ${$new_cf}{'funds'} / 100.0;
-    # Funds passed a threshold ?
-    my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
-    if ($args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
+      # Funds passed a threshold ?
+      my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
+      if ($args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
 printf STDERR "Crowdfund just passed \$%s: %s\n", prettyprint(int($funds_t) / 100), get_current_cf($new_cf);
-      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", prettyprint(int(previous_funds_threshold(${$new_cf}{'funds'})) / 100), get_current_cf($new_cf));
-    } elsif ($args->{autocheck} != 1) {
-      ${$new_cf}{'report'} = get_current_cf($new_cf);
+        ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", prettyprint(int(previous_funds_threshold(${$new_cf}{'funds'})) / 100), get_current_cf($new_cf));
+      } elsif ($args->{autocheck} != 1) {
+        ${$new_cf}{'report'} = get_current_cf($new_cf);
+      }
     }
     push @params, 'irc_sc_crowdfund_success', $args, $new_cf;
 #for my $p (@params) { printf STDERR " param = $p\n"; }
