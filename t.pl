@@ -3,31 +3,18 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-#use WWW::Mechanize;
 
-#my $mech = WWW::Mechanize->new();
-#$mech->get('http://www.youtube.com/watch?v=9612CgOr3lE');
-#
-#printf "Title: %s\n", $mech->title;
+my @steps = (50, 25, 15, 5, 1, 1, 1, 1);
 
-use HTML::TreeBuilder;
-
-my $tree = HTML::TreeBuilder->new;
-my $page = "";
-while (<STDIN>) {
-  $page = $page . $_;
+my $current = 2099732845;
+my $t = 2099900000;
+while (@steps and $current < $t) {
+  my $s = pop @steps;
+  printf STDERR "\tStep: %d\n", $s;
+  $t -= 100000 * $s;
+  printf STDERR "\tProposing: %d\n", $t;
 }
-$tree->parse($page);
-$tree->eof();
-$tree->elementify();
-print Dumper($tree);
-
-my $title = $tree->look_down('_tag', 'title');
-if ($title) {
-  printf "Title: '%s'\n", $title->as_text;
-} else {
-  print "No title!\n";
-}
-
-#$tree->dump;
-$tree->delete;
+  while ($current < $t) {
+        $t -= 10000000; # Drop another 100k
+        printf STDERR "\tProposing: %d\n", $t;
+          }

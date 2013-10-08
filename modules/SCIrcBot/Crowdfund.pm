@@ -8,6 +8,7 @@ use POE::Component::IRC::Plugin qw(:ALL);
 use HTTP::Request;
 use JSON;
 use POSIX;
+use Data::Dumper;
 
 my $last_cf = { 'funds' => 0 };
 
@@ -81,7 +82,6 @@ sub _get_crowdfund {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
-  my $url = 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats';
   my $crowd = undef;
   my $json = encode_json(
     {
@@ -90,7 +90,8 @@ sub _get_crowdfund {
       'alpha_slots' => 'true'
     }
   );
-  my $req = HTTP::Request->new('POST', $url);
+#foreach my $a (keys(%args)) { printf STDERR "arg{%s} = %s\n", $a, $args{$a}; }
+  my $req = HTTP::Request->new('POST', $args{crowdfund_url});
   $req->header('Content-Type' => 'application/json');
   $req->content($json);
 #printf STDERR "_GET_CROWDFUND: posting to http_alias\n";
@@ -114,28 +115,28 @@ sub _parse_crowdfund {
     push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
   } else {
 #printf STDERR "_PARSE_CROWDFUND: res == success\n";
-    push @params, 'irc_sc_crowdfund_success', $args;
     my $json = decode_json($res->content);
 #printf STDERR "_PARSE_CROWDFUND: got json\n";
     $new_cf = ${$json}{'data'};
     ${$new_cf}{'time'} = time();
-#printf STDERR "_PARSE_CROWDFUND: got new_cf\n";
+#   printf STDERR "_PARSE_CROWDFUND: got new_cf\n";
 
-#for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
-#for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
-printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmtime()), ${$last_cf}{'funds'} / 100.0, ${$new_cf}{'funds'} / 100.0;
+#   for my $n (keys(%{$new_cf})) { printf STDERR " new_cf{$n} = ${$new_cf}{$n}\n"; }
+#   for my $n (keys(%{$last_cf})) { printf STDERR " last_cf{$n} = ${$last_cf}{$n}\n"; }
+    printf STDERR "%s - Checking %d against %d\n", strftime("%Y-%m-%d %H:%M:%S", gmtime()), ${$last_cf}{'funds'} / 100.0, ${$new_cf}{'funds'} / 100.0;
     # Funds passed a threshold ?
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
-    if (${$new_cf}{'funds'} > $funds_t) {
-      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", $funds_t, get_current_cf($new_cf));
-    } else {
+    if (${$last_cf}{'funds'} > 0 and $args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
+      printf STDERR "Crowdfund just passed \$%s: %s\n", prettyprint(int($funds_t) / 100), get_current_cf($new_cf);
+      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", prettyprint(int(previous_funds_threshold(${$new_cf}{'funds'})) / 100), get_current_cf($new_cf));
+    } elsif ($args->{autocheck} != 1) {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
-    push @params, $new_cf;
+    push @params, 'irc_sc_crowdfund_success', $args, $new_cf;
+#for my $p (@params) { printf STDERR " param = $p\n"; }
     $last_cf = $new_cf;
   }
 
-#for my $p (@params) { printf STDERR " param = $p\n"; }
   $kernel->post(@params);
   undef;
 }
@@ -149,37 +150,65 @@ sub next_funds_threshold {
   # We'll report at every $100,000 step
   my $t = int($current / 10000000) * 10000000 + 10000000;
 #$t = int($current / (5 * 100)) * (5 * 100) + (5 * 100);
-printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
+#printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
   # Except is that's a round million then we want finer reporting,
   # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /
   #                $X,990,000 / $X,995,000 / $X,99[6-9],000
   if ($t == int($current / 100000000) * 100000000 + 100000000) {
     # The next $100k is the next $1m as well, so drop back $50k
     $t = $t - 5000000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
     if ($t < $current) {
     # This is less than current, so bump to $75k
       $t += 2500000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
       if ($t < $current) {
       # This is less than current, so bump to $90k
         $t += 1500000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
         if ($t < $current) {
         # This is less than current, so bump to $95k
           $t += 500000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
           if ($t < $current) {
           # This iless than current, so bump by $1k increments
             while ($t < $current) {
               $t += 100000;
-printf STDERR "\tProposing: %d\n", $t;
+#printf STDERR "\tProposing: %d\n", $t;
             }
           }
         }
       }
     }
   }
+
+printf STDERR "next_funds_threshold(%d), proposing %d\n", $current, $t;
+  return $t;
+}
+
+# Select the previous threshold that we most recently passed
+sub previous_funds_threshold {
+  # NB: this amount is in cents, not dollars
+  my $current = shift;
+
+  # We'll report at every $100,000 step
+  # Except is that's a round million then we want finer reporting,
+  # i.e. report at $X,800,000 / $X,900,000 / $X,950,000 / $X,975,000 /
+  #                $X,990,000 / $X,995,000 / $X,99[6-9],000
+  # Thus for this we start at the current million, add 999000, then work
+  # backwards.
+  my $t = int($current / 100000000) * 100000000 + 99900000;
+#printf STDERR "previous_funds_threshold(%d), proposing %d\n", $current, $t;
+  my @steps = (50, 25, 15, 5, 1, 1, 1, 1);
+  while (@steps and $current < $t) {
+    $t -= 100000 * pop @steps;
+#printf STDERR "\tProposing: %d\n", $t;
+  }
+  while ($current < $t) {
+    $t -= 10000000; # Drop another 100k
+#printf STDERR "\tProposing: %d\n", $t;
+  }
+printf STDERR "previous_funds_threshold(%d), proposing %d\n", $current, $t;
 
   return $t;
 }

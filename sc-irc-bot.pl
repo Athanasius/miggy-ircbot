@@ -58,14 +58,14 @@ sub _start {
     POE::Component::IRC::Plugin::BotCommand->new(
       Commands => {
         crowdfund => { 
-          info => 'Takes no arguments, reports current crowdfund data.',
+          info => 'Takes no arguments, reports current crowdfund data. OPS/VOICE ONLY',
           aliases => [ 'cf' ],
         },
         rss => {
-          info => 'Takes no arguments, checks RSI RSS feed.',
+          info => 'Takes no arguments, checks RSI RSS feed. OPS/VOICE ONLY',
         },
         url => {
-          info => 'Takes a URL as an argument.'
+          info => 'Takes a URL as an argument. OPS/VOICE ONLY'
         },
       },
       In_channels => 1,
@@ -115,7 +115,7 @@ sub _start {
     SCIrcBot::Crowdfund->new()
   );
   # Get Crowdfund::$last_cf initialised
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 1 } );
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 
@@ -181,17 +181,23 @@ printf STDERR "irc_public/action: parsed '\n%s\n' from '\n%s\n', passing to get_
 ###########################################################################
 ### The in-channel checking of crowdfund
 sub irc_botcmd_crowdfund {
-  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
+  my ($kernel, $session, $sender, $channel) = @_[KERNEL, SESSION, SENDER, ARG1];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
 
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
   $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
-  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 0, quiet => 0 } );
 }
 
 ### Function to check current/last crowdfund against thresholds
 sub handle_crowdfund_check_threshold {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 0 } );
 
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 }
@@ -201,6 +207,8 @@ sub irc_sc_crowdfund_success {
   my $channel = delete $args->{_channel};
 
 #printf STDERR "irc_sc_crowdfund_success:\n";
+#printf STDERR " quiet: %s\n", Dumper($args->{quiet});
+#printf STDERR " ARG1: %s\n", Dumper($_[ARG1]);
   if (defined($_[ARG1]) and $args->{quiet} == 0) {
     my $crowd = $_[ARG1];
     if (defined(${$crowd}{'error'})) {
@@ -232,8 +240,14 @@ sub handle_rss_check {
 }
 
 sub irc_botcmd_rss {
-  my ($kernel, $session, $channel) = @_[KERNEL, SESSION, ARG1];
+  my ($kernel, $session, $sender, $channel) = @_[KERNEL, SESSION, SENDER, ARG1];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
 
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
   $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
   $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
 }
@@ -264,8 +278,14 @@ mylog("irc_sc_rss_error...");
 # URL Parsing
 ###########################################################################
 sub irc_botcmd_url {
-  my ($kernel, $session, $channel, $url) = @_[KERNEL, SESSION, ARG1, ARG2];
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
 
+  unless ($poco->is_channel_operator($channel, $nick)
+    or $poco->has_channel_voice($channel, $nick)) {
+    return;
+  }
   $irc->yield('privmsg', $channel, "Running URL query on '" . $url . "', please wait ...");
   $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $url } );
 }

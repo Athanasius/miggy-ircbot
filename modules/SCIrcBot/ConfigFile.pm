@@ -11,6 +11,7 @@ our %config = (
   'console_password' => 'UnwindLamps',
   'seen_filestore' => 'seen_filestore.db',
   'crowdfund_funds_check_time' => 300,
+  'crowdfund_url' => 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats',
   'rss_url' => 'https://robertsspaceindustries.com/comm-link/rss',
   'rss_filestore' => 'rss.db',
   'rss_check_time' => 300,
@@ -49,6 +50,8 @@ sub new {
       $config{'seen_filestore'} = $1;
     } elsif (/^crowdfund_funds_check_time:\s+(.*)$/i) {
       $config{'crowdfund_funds_check_time'} = $1;
+    } elsif (/^crowdfund_url:\s+(.*)$/i) {
+      $config{'crowdfund_url'} = $1;
     } elsif (/^rss_url:\s+(.*)$/i) {
       $config{'rss_url'} = $1;
     } elsif (/^rss_filestore:\s+(.*)$/i) {
