@@ -122,6 +122,7 @@ sub _start {
   $irc->plugin_add('SCAlarmClock',
     SCIrcBot::AlarmClock->new()
   );
+  $kernel->yield('init_alarms', { session_id => $session });
 
   $irc->yield( register => 'all' );
 }
@@ -331,6 +332,8 @@ sub irc_sc_alarm_announce {
   my $channel = $config->getconf('channel');
 
   $irc->yield('privmsg', $channel, "Alarm '" . $alarm . "' triggered");
+
+  undef;
 }
 ###########################################################################
 
