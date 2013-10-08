@@ -29,7 +29,9 @@ sub new {
   while (<CF>) {
     $line++;
     chomp;
-    if (/^nickname:\s+(.*)$/i) {
+    if (/^\#/) {
+      next;
+    } elsif (/^nickname:\s+(.*)$/i) {
       $config{'nickname'} = $1;
     } elsif (/^ircname:\s+(.*)$/i) {
       $config{'ircname'} = $1;
