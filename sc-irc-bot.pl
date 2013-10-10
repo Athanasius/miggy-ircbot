@@ -333,12 +333,27 @@ sub irc_sc_alarm_announce {
 
   #printf STDERR "irc_sc_alarm_announce: alarm = %s\n", Dumper($alarm);
   if (defined($pre)) {
-    $irc->yield('privmsg', $channel, sprintf(${$alarm}{'pre_announce_text'}, $pre));
+    $irc->yield('privmsg', $channel, sprintf(${$alarm}{'pre_announce_text'}, hours_minutes_text($pre)));
   } else {
     $irc->yield('privmsg', $channel, ${$alarm}{'announce_text'});
   }
 
   undef;
+}
+
+# Given a number of minutes return an "X hours" / "1 hour" / "X minutes" / "1 minute" text
+sub hours_minutes_text {
+  my $mins = shift;
+
+  if ($mins == 1) {
+    return "one minute";
+  } elsif ($mins < 60) {
+    return $mins . " minutes";
+  } elsif ($mins < 120) {
+    return "one hour";
+  } else {
+    return int($mins / 60) . " hours";
+  }
 }
 ###########################################################################
 
