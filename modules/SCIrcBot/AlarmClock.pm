@@ -16,7 +16,7 @@ my %alarms = (
   'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
     'announce_text' => "Wingman's hangar is starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Thu 09:08:00',
+    'time' => 'Thu 09:26:30',
     'timezone' => 'CST6CDT',
     'pre_announce_times' => [60, 30, 15, 5], # Minutes
     'pre_announce_text' => "Wingman's Hangar starts in %d minutes: http://twitch.tv/roberts_space_ind_ch_1",
@@ -89,21 +89,28 @@ sub init_alarms {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
+  #foreach my $a (keys(%args)) { printf STDERR "args{'%s'} = %s\n", $a, $args{$a}; } 
   foreach my $a (keys(%alarms)) {
-    my $t = parse_alarm_time(${$alarms{$a}}{'time'}, ${$alarms{$a}}{'timezone'});
-    print strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($t));
-    if ($t > 0) {
-    # Now set a delay for the specified time to callback
-      printf (STDERR "kernel->alarm('alarm_announce', %d, %s\n", $t, $a);
-# $args{session_id} <--- this session rather than SCIRcBot one
-      $kernel->alarm('alarm_announce', $t, \%args, $a);
-    } else {
-      printf STDERR "Time has already passed\n";
-    }
+    schedule_alarm($a, $kernel, %args);
   }
 #exit(0);
 
   undef;
+}
+
+sub schedule_alarm {
+  my ($a, $kernel, %args) = @_;
+
+  #foreach my $a (keys(%args)) { printf STDERR "args{'%s'} = %s\n", $a, $args{$a}; } 
+  my $t = parse_alarm_time(${$alarms{$a}}{'time'}, ${$alarms{$a}}{'timezone'});
+  print strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($t));
+  if ($t > 0) {
+  # Now set a delay for the specified time to callback
+    printf (STDERR "kernel->alarm('alarm_announce', %d, '%s')\n", $t, $a);
+    $kernel->alarm('alarm_announce', $t, \%args, $a);
+  } else {
+    printf STDERR "Time has already passed\n";
+  }
 }
 
 sub alarm_announce {
@@ -119,6 +126,8 @@ sub _alarm_announce {
   printf STDERR "_alarm_announce for '%s'\n", $alarm;
 
   $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $alarm, $alarms{$alarm});
+  #foreach my $a (keys(%$args)) { printf STDERR "args{'%s'} = %s\n", $a, ${$args}{$a}; } 
+  schedule_alarm($alarm, $kernel, %$args);
 
   undef;
 }
