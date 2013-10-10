@@ -115,12 +115,14 @@ sub schedule_alarm {
       last;
     }
   }
-  printf STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
+  printf STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", localtime($time));
 
   if ($time > 0) {
   # Now set a delay for the specified time to callback
-    printf (STDERR "kernel->alarm('alarm_announce', %d, '%s')\n", $time, $alarm);
-    $kernel->alarm('alarm_announce', $time, \%args, $alarm);
+    printf (STDERR "kernel->alarm_set('alarm_announce', %d, '%s')\n", $time, $alarm);
+    if (! $kernel->alarm_set('alarm_announce', $time, \%args, $alarm)) {
+      printf STDERR "           FAILED!\n";
+    }
   } else {
     printf STDERR "Time has already passed\n";
   }
@@ -128,7 +130,7 @@ sub schedule_alarm {
 
 sub alarm_announce {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-  #printf STDERR "ALARM_ANNOUNCE\n";
+  printf STDERR "ALARM_ANNOUNCE\n";
   $kernel->post( $self->{session_id}, '_alarm_announce', @_[ARG0..$#_] );
   undef;
 }
@@ -136,10 +138,10 @@ sub alarm_announce {
 sub _alarm_announce {
   my ($kernel, $self, $args, $alarm) = @_[KERNEL, OBJECT, ARG0, ARG1];
 
-  #printf STDERR "_alarm_announce for '%s'\n", $alarm;
+  printf STDERR "_alarm_announce for '%s'\n", $alarm;
 
   $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $alarm, $alarms{$alarm}, defined($args->{pre}) ? $args->{pre} : undef);
-  #foreach my $a (keys(%$args)) { printf STDERR "args{'%s'} = %s\n", $a, ${$args}{$a}; } 
+  foreach my $a (keys(%$args)) { printf STDERR "args{'%s'} = %s\n", $a, ${$args}{$a}; } 
   schedule_alarm($alarm, $kernel, %$args);
 
   undef;
