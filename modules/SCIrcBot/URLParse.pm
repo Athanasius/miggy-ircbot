@@ -106,15 +106,19 @@ sub _parse_url {
     push @params, 'irc_sc_url_error', $args, $error;
   } else {
 #printf STDERR "_PARSE_URL: res == success\n";
-
-    my $tree = HTML::TreeBuilder->new;
-    $tree->parse($res->decoded_content);
-    $tree->eof();
-    my $title = $tree->look_down('_tag', 'title');
-    if ($title) {
-      push @params, 'irc_sc_url_success', $args, $title->as_text;
+    if ($res->header('Content-Type') =~ /^text\/(ht|x)ml/) {
+      my $tree = HTML::TreeBuilder->new;
+      $tree->parse($res->decoded_content);
+      $tree->eof();
+      my $title = $tree->look_down('_tag', 'title');
+      if ($title) {
+        push @params, 'irc_sc_url_success', $args, $title->as_text;
+      } else {
+        push @params, 'irc_sc_url_error', $args, "No <title> found in URL content";
+      }
     } else {
-      push @params, 'irc_sc_url_error', $args, "No <title> found in URL content";
+      $args->{'quiet'} = 1;
+      push @params, 'irc_sc_url_success', $args, "That was not an HTML page";
     }
   }
 
