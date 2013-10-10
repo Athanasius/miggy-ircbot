@@ -117,7 +117,7 @@ sub schedule_alarm {
   }
   printf STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", localtime($time));
 
-  if ($time > 0) {
+  if ($time > 0 and $time > time()) {
   # Now set a delay for the specified time to callback
     printf (STDERR "kernel->alarm_set('alarm_announce', %d, '%s')\n", $time, $alarm);
     if (! $kernel->alarm_set('alarm_announce', $time, \%args, $alarm)) {
