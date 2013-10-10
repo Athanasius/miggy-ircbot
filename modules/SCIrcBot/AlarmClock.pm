@@ -16,15 +16,16 @@ my %alarms = (
   'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
     'announce_text' => "Wingman's hangar is starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Thu 09:30:45',
+    'time' => 'Thu 10:16:00',
     'timezone' => 'CST6CDT',
-    'pre_announce_times' => [60, 30, 15, 5], # Minutes
+#    'pre_announce_times' => [60, 30, 15, 5], # Minutes
+    'pre_announce_times' => [2,1], # Minutes
     'pre_announce_text' => "Wingman's Hangar starts in %d minutes: http://twitch.tv/roberts_space_ind_ch_1",
   },
   '1yrstream' => {
     'fullname' => "1 Year Anniversay Stream",
     'announce_text' => "1 year anniversay stream should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Thu Oct 10 2013 18:30:00',
+    'time' => 'Wed Oct  9 2013 18:30:00',
     'timezone' => 'CST6CDT',
     'pre_announce_times' => [60, 30, 15, 5], # Minutes
     'pre_announce_text' => "Wingman's Hangar starts in %d minutes: http://twitch.tv/roberts_space_ind_ch_1",
@@ -44,7 +45,7 @@ sub PCI_register {
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start _alarm_announce) ],
+      $self => [ qw(_shutdown _start _alarm_announce alarm_announce) ],
     ],
   )->ID();
   $poe_kernel->state('init_alarms', $self );
@@ -99,15 +100,27 @@ sub init_alarms {
 }
 
 sub schedule_alarm {
-  my ($a, $kernel, %args) = @_;
+  my ($alarm, $kernel, %args) = @_;
 
-  #foreach my $a (keys(%args)) { printf STDERR "args{'%s'} = %s\n", $a, $args{$a}; } 
-  my $t = parse_alarm_time(${$alarms{$a}}{'time'}, ${$alarms{$a}}{'timezone'});
-  print strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($t));
-  if ($t > 0) {
+  #foreach my $alarm (keys(%args)) { printf STDERR "args{'%s'} = %s\n", $alarm, $args{$alarm}; } 
+  my $time = parse_alarm_time($alarm); #{$alarms{$alarm}}{'time'}, ${$alarms{$alarm}}{'timezone'});
+  print strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
+  $args{'pre'} = undef;
+  foreach my $pre (@{$alarms{$alarm}{'pre_announce_times'}}) {
+    printf STDERR "parse_alarm_time: Checking pre-minutes: %d\n", $pre;
+    if (($time - 60 * $pre) > time()) {
+      printf STDERR "parse_alarm_time: It's still at least %d minutes before %s\n", $pre, strftime("%Y-%m-%d %H:%M:%S %Z", localtime($time));
+      $args{'pre'} = $pre;
+      $time -= 60 * $pre;
+      last;
+    }
+  }
+  print strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
+
+  if ($time > 0) {
   # Now set a delay for the specified time to callback
-    printf (STDERR "kernel->alarm('alarm_announce', %d, '%s')\n", $t, $a);
-    $kernel->alarm('alarm_announce', $t, \%args, $a);
+    printf (STDERR "kernel->alarm('alarm_announce', %d, '%s')\n", $time, $alarm);
+    $kernel->alarm('alarm_announce', $time, \%args, $alarm);
   } else {
     printf STDERR "Time has already passed\n";
   }
@@ -125,7 +138,7 @@ sub _alarm_announce {
 
   printf STDERR "_alarm_announce for '%s'\n", $alarm;
 
-  $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $alarm, $alarms{$alarm});
+  $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $alarm, $alarms{$alarm}, defined($args->{pre}) ? $args->{pre} : undef);
   #foreach my $a (keys(%$args)) { printf STDERR "args{'%s'} = %s\n", $a, ${$args}{$a}; } 
   schedule_alarm($alarm, $kernel, %$args);
 
@@ -137,7 +150,8 @@ sub _alarm_announce {
 # next occur.
 ###########################################################################
 sub parse_alarm_time {
-  my ($timestr, $timezone) = @_;
+  my $alarm = shift;
+  my ($timestr, $timezone) = ($alarms{$alarm}{'time'}, $alarms{$alarm}{'timezone'});
   printf STDERR "parse_alarm_time('%s', '%s'):\n", $timestr, $timezone;
   my $time = 0;
   my $old_tz = $ENV{'TZ'};

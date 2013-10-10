@@ -328,12 +328,15 @@ sub irc_botcmd_alarm {
 }
 
 sub irc_sc_alarm_announce {
-  my ($kernel, $sender, $alarmtag, $alarm) = @_[KERNEL, SENDER, ARG0, ARG1];
+  my ($kernel, $sender, $alarmtag, $alarm, $pre) = @_[KERNEL, SENDER, ARG0, ARG1, ARG2];
   my $channel = $config->getconf('channel');
 
   #printf STDERR "irc_sc_alarm_announce: alarm = %s\n", Dumper($alarm);
-  $irc->yield('privmsg', $channel,
-    "Alarm '" . $alarmtag . "' triggered: " . ${$alarm}{'announce_text'});
+  if (defined($pre)) {
+    $irc->yield('privmsg', $channel, sprintf(${$alarm}{'pre_announce_text'}, $pre));
+  } else {
+    $irc->yield('privmsg', $channel, ${$alarm}{'announce_text'});
+  }
 
   undef;
 }
