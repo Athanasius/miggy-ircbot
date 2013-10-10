@@ -16,7 +16,7 @@ my %alarms = (
   'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
     'announce_text' => "Wingman's hangar is starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Tue 16:27:15',
+    'time' => 'Thu 09:08:00',
     'timezone' => 'CST6CDT',
     'pre_announce_times' => [60, 30, 15, 5], # Minutes
     'pre_announce_text' => "Wingman's Hangar starts in %d minutes: http://twitch.tv/roberts_space_ind_ch_1",
@@ -44,16 +44,18 @@ sub PCI_register {
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start alarm_announce) ],
+      $self => [ qw(_shutdown _start _alarm_announce) ],
     ],
   )->ID();
-  $poe_kernel->state( 'init_alarms', $self );
+  $poe_kernel->state('init_alarms', $self );
+  $poe_kernel->state('alarm_announce', $self );
   return 1;
 }
 
 sub PCI_unregister {
   my ($self,$irc) = splice @_, 0, 2;
-  $poe_kernel->state( 'init_alarms' );
+  $poe_kernel->state('init_alarms' );
+  $poe_kernel->state('alarm_announce');
   $poe_kernel->call( $self->{session_id} => '_shutdown' );
   delete $self->{irc};
   return 1;
@@ -93,6 +95,7 @@ sub init_alarms {
     if ($t > 0) {
     # Now set a delay for the specified time to callback
       printf (STDERR "kernel->alarm('alarm_announce', %d, %s\n", $t, $a);
+# $args{session_id} <--- this session rather than SCIRcBot one
       $kernel->alarm('alarm_announce', $t, \%args, $a);
     } else {
       printf STDERR "Time has already passed\n";
@@ -104,11 +107,18 @@ sub init_alarms {
 }
 
 sub alarm_announce {
+  my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
+  printf STDERR "ALARM_ANNOUNCE\n";
+  $kernel->post( $self->{session_id}, '_alarm_announce', @_[ARG0..$#_] );
+  undef;
+}
+
+sub _alarm_announce {
   my ($kernel, $self, $args, $alarm) = @_[KERNEL, OBJECT, ARG0, ARG1];
 
-  printf STDERR "alarm_announce for '%s'\n", $alarm;
+  printf STDERR "_alarm_announce for '%s'\n", $alarm;
 
-  $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $a, $alarms{$a});
+  $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $alarm, $alarms{$alarm});
 
   undef;
 }
