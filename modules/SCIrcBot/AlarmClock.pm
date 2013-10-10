@@ -108,7 +108,7 @@ sub schedule_alarm {
   $args{'pre'} = undef;
   foreach my $pre (@{$alarms{$alarm}{'pre_announce_times'}}) {
     printf STDERR "schedule_alarm: Checking pre-minutes: %d\n", $pre;
-    if (($time - 60 * $pre) > time()) {
+    if (($time - 60 * $pre - 5) > time()) {
       printf STDERR "schedule_alarm: It's still at least %d minutes before %s\n", $pre, strftime("%Y-%m-%d %H:%M:%S %Z", localtime($time));
       $args{'pre'} = $pre;
       $time -= 60 * $pre;
