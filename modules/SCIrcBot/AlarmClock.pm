@@ -16,7 +16,7 @@ my %alarms = (
   'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
     'announce_text' => "Wingman's hangar is starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Thu 09:26:30',
+    'time' => 'Thu 09:30:45',
     'timezone' => 'CST6CDT',
     'pre_announce_times' => [60, 30, 15, 5], # Minutes
     'pre_announce_text' => "Wingman's Hangar starts in %d minutes: http://twitch.tv/roberts_space_ind_ch_1",
@@ -172,7 +172,7 @@ sub parse_alarm_time {
     #       vs 17:29 or before in 17:XX, but not 16:29 or before in 16:XX
       if ($now[HOUR] > $hour
         or $now[HOUR] == $hour and $now[MIN] > $minute
-        or $now[HOUR] == $hour and $now[MIN] == $minute and $now[SEC] > $second) {
+        or $now[HOUR] == $hour and $now[MIN] == $minute and $now[SEC] >= $second) {
         #printf STDERR "Today, but time has passed\n";
         $now[MDAY] += 7; 
         $now[WDAY] = -1;
