@@ -104,25 +104,25 @@ sub schedule_alarm {
 
   #foreach my $alarm (keys(%args)) { printf STDERR "args{'%s'} = %s\n", $alarm, $args{$alarm}; } 
   my $time = parse_alarm_time($alarm); #{$alarms{$alarm}}{'time'}, ${$alarms{$alarm}}{'timezone'});
-  #print STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
+  print STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
   $args{'pre'} = undef;
   foreach my $pre (@{$alarms{$alarm}{'pre_announce_times'}}) {
-    #printf STDERR "parse_alarm_time: Checking pre-minutes: %d\n", $pre;
+    printf STDERR "schedule_alarm: Checking pre-minutes: %d\n", $pre;
     if (($time - 60 * $pre) > time()) {
-      #printf STDERR "parse_alarm_time: It's still at least %d minutes before %s\n", $pre, strftime("%Y-%m-%d %H:%M:%S %Z", localtime($time));
+      printf STDERR "schedule_alarm: It's still at least %d minutes before %s\n", $pre, strftime("%Y-%m-%d %H:%M:%S %Z", localtime($time));
       $args{'pre'} = $pre;
       $time -= 60 * $pre;
       last;
     }
   }
-  #printf STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
+  printf STDERR strftime("%Y-%m-%d %H:%M:%S %Z\n", gmtime($time));
 
   if ($time > 0) {
   # Now set a delay for the specified time to callback
-    #printf (STDERR "kernel->alarm('alarm_announce', %d, '%s')\n", $time, $alarm);
+    printf (STDERR "kernel->alarm('alarm_announce', %d, '%s')\n", $time, $alarm);
     $kernel->alarm('alarm_announce', $time, \%args, $alarm);
   } else {
-    #printf STDERR "Time has already passed\n";
+    printf STDERR "Time has already passed\n";
   }
 }
 
@@ -152,7 +152,7 @@ sub _alarm_announce {
 sub parse_alarm_time {
   my $alarm = shift;
   my ($timestr, $timezone) = ($alarms{$alarm}{'time'}, $alarms{$alarm}{'timezone'});
-  #printf STDERR "parse_alarm_time('%s', '%s'):\n", $timestr, $timezone;
+  printf STDERR "parse_alarm_time('%s', '%s'):\n", $timestr, $timezone;
   my $time = 0;
   my $old_tz = $ENV{'TZ'};
   $ENV{'TZ'} = $timezone;
@@ -167,16 +167,17 @@ sub parse_alarm_time {
   } elsif ($timestr =~ /^(?<dayofweek>\w{3})\s(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})$/) {
     # A weekly repeat, i.e. 'Fri 11:00:00',
     my ($dayofweek, $hour, $minute, $second) = ($+{'dayofweek'}, $+{'hour'}, $+{'minute'}, $+{'second'});
-    #printf STDERR "parse_alarm_time: dow = %s, hour = %s, min = %s, sec = %s\n", $dayofweek, $hour, $minute, $second;
+    printf STDERR "parse_alarm_time: dow = '%s', hour = '%s', min = '%s', sec = '%s'\n", $dayofweek, $hour, $minute, $second;
     # Get current time struct: ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
     my @now = localtime(time());
     # Check day of week against the string
     # tm_wday   The number of days since Sunday, in the range 0 to 6.
     my @days = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun');
     my @today = grep { $days[$_] eq $dayofweek } 0..$#days;
-    #foreach my $t (@today) { print "parse_alarm_time: today = ", $t, "\n"; }
+    foreach my $t (@today) { printf STDERR "parse_alarm_time: today = %s\n", $t; }
     if ($now[WDAY] < $today[0]) {
     # Today is before the weekly day we need, so set up struct_tm with the event's time and day
+      $now[MDAY] += $today[0] - $now[WDAY];
       $now[WDAY] = $today[0];
       $now[HOUR] = $hour; $now[MIN] = $minute; $now[SEC] = $second;
     } elsif ($now[WDAY] == $today[0]) {
