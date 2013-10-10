@@ -1,3 +1,6 @@
+1) Make URLParse check 'bare' URLs in more detail:
+  ...so  should NOT be counted as a possible URL!
+
 *) Make Seen.pm notice quits
 *) Make Seen.pm output format better (time ago)
 *) Make !crowdfund command update $last_cf
