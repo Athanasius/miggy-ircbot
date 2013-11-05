@@ -127,8 +127,8 @@ sub _parse_crowdfund {
     # Funds passed a threshold ?
     my $funds_t = next_funds_threshold(${$last_cf}{'funds'});
     if (${$last_cf}{'funds'} > 0 and $args->{quiet} == 0 and ${$new_cf}{'funds'} > $funds_t) {
-      printf STDERR "Crowdfund just passed \$%s: %s\n", prettyprint(int($funds_t) / 100), get_current_cf($new_cf);
-      ${$new_cf}{'report'} = sprintf("Crowdfund just passed \$%s: %s", prettyprint(int(previous_funds_threshold(${$new_cf}{'funds'})) / 100), get_current_cf($new_cf));
+      printf STDERR "Crowdfund has passed \$%s: %s\n", prettyprint(int($funds_t) / 100), get_current_cf($new_cf);
+      ${$new_cf}{'report'} = sprintf("Crowdfund has passed \$%s: %s", prettyprint(int(previous_funds_threshold(${$new_cf}{'funds'})) / 100), get_current_cf($new_cf));
     } elsif ($args->{autocheck} != 1) {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
