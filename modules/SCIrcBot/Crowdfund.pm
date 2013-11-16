@@ -113,6 +113,10 @@ sub _parse_crowdfund {
 #printf STDERR "_PARSE_CROWDFUND: res != success: $res->status_line\n";
     ${$new_cf}{'error'} =  "Failed to retrieve crowdfund info: " . $res->status_line;
     push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
+  } elsif ($res->content !~ /^{".*}$/) {
+    printf STDERR "_PARSE_CROWDFUND: Not in JSON Format: '%s'\n", $res->content;
+    ${$new_cf}{'error'} =  "Crowdfund info not in JSON format";
+    push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
   } else {
 #printf STDERR "_PARSE_CROWDFUND: res == success\n";
     my $json = decode_json($res->content);

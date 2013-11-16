@@ -221,11 +221,11 @@ sub irc_sc_crowdfund_success {
 }
 
 sub irc_sc_crowdfund_error {
-  my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
+  my ($kernel, $sender, $args, $new_cf) = @_[KERNEL, SENDER, ARG0, ARG1];
   my $channel = delete $args->{_channel};
 
 mylog("irc_sc_crowdfund_error...");
-  $irc->yield('privmsg', $channel, "Crowdfund Error: " . $error);
+  $irc->yield('privmsg', $channel, "Crowdfund Error: " . ${$new_cf}{'error'});
 }
 ###########################################################################
 
