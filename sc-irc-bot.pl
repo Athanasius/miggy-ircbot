@@ -54,7 +54,7 @@ sub _start {
     POE::Component::IRC::Plugin::BotCommand->new(
       Commands => {
         crowdfund => { 
-          info => 'Takes no arguments, reports current crowdfund data. OPS/VOICE ONLY',
+          info => 'Takes no arguments, reports current crowdfund data.',
           aliases => [ 'cf' ],
         },
         rss => {
@@ -186,10 +186,10 @@ sub irc_botcmd_crowdfund {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  unless ($poco->is_channel_operator($channel, $nick)
-    or $poco->has_channel_voice($channel, $nick)) {
-    return;
-  }
+#  unless ($poco->is_channel_operator($channel, $nick)
+#    or $poco->has_channel_voice($channel, $nick)) {
+#    return;
+#  }
   $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
   $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 0, quiet => 0 } );
 }
