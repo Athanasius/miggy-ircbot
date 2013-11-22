@@ -30,6 +30,14 @@ my %alarms = (
     'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
     'pre_announce_text' => "1 year anniversay stream should be starting in %s http://www.youtube.com/watch?v=O8HvfFCysYU",
   },
+  '2ndyearstart' => {
+    'fullname' => "Start of 2nd Year Stream",
+    'announce_text' => "Live Stream for start of 2nd year should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
+    'time' => 'Tue Nov 26 2013 11:00:00',
+    'timezone' => 'PST8PDT',
+    'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
+    'pre_announce_text' => "Live Stream for start of 2nd year should be starting in %s http://twitch.tv/roberts_space_ind_ch_1",
+  },
 );
 
 sub new {
