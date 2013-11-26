@@ -9,9 +9,14 @@
 *) Rate-limit bot commands like !crowdfund (exclude ops?)
 *) Alpha slots watcher
 *) Use stored data to provide funds/alpha rates
-*) Reminders: i.e. Wingman's Hangar
 *) Ship stats
 *) Dev Tracker
+  Know how to do this directly now.
 *) Create a Q account for the bot and qauth
 *) Watch for new youtube videos (WMH)
+*) Forward twitch emails about going live to sc@fysh.org and hook up procmail
+  to trigger bot announce.
+
+Below here is DONE
+*) Reminders: i.e. Wingman's Hangar
 *) Check content-type before parsing URL content
