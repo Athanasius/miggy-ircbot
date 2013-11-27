@@ -1,7 +1,3 @@
-1) Make sure an alarm triggering doesn't re-set itself for the same second and end up spamming!
-2) Make URLParse check 'bare' URLs in more detail:
-  ...so  should NOT be counted as a possible URL!
-
 *) Make bot respond to invite, if it's to the config'd channel (in case of flood kick)
 *) Make Seen.pm notice quits
 *) Make Seen.pm output format better (time ago)
@@ -16,7 +12,12 @@
 *) Watch for new youtube videos (WMH)
 *) Forward twitch emails about going live to sc@fysh.org and hook up procmail
   to trigger bot announce.
+*) Extra command: !youtube - Show rsi channel URL
+*) Extra command: !twitch - show rsi twitch URL
+*) Extra command: !hangover / !wmho / !ustream - Show WM's ustream URL
 
 Below here is DONE
 *) Reminders: i.e. Wingman's Hangar
 *) Check content-type before parsing URL content
+2) Make URLParse check 'bare' URLs in more detail: ...so  should NOT be counted as a possible URL!
+1) Make sure an alarm triggering doesn't re-set itself for the same second and end up spamming!
