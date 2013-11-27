@@ -15,6 +15,7 @@
 *) Extra command: !youtube - Show rsi channel URL
 *) Extra command: !twitch - show rsi twitch URL
 *) Extra command: !hangover / !wmho / !ustream - Show WM's ustream URL
+*) Extra command: !calc - simply calculator
 
 Below here is DONE
 *) Reminders: i.e. Wingman's Hangar
