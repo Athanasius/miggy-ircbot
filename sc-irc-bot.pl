@@ -34,8 +34,12 @@ POE::Session->create(
       irc_ctcp_action
       irc_botcmd_crowdfund irc_sc_crowdfund_success irc_sc_crowdfund_error
       irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error
-      irc_botcmd_url irc_sc_url_success irc_sc_url_error
+      irc_sc_url_success irc_sc_url_error
       irc_botcmd_alarm irc_sc_alarm_announce
+      irc_botcmd_youtube
+      irc_botcmd_twitch
+      irc_botcmd_hangover
+      irc_botcmd_wmh
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
@@ -60,14 +64,26 @@ sub _start {
         rss => {
           info => 'Takes no arguments, checks RSI RSS feed. OPS/VOICE ONLY',
         },
-        url => {
-          info => 'Takes a URL as an argument. OPS/VOICE ONLY'
+        youtube => {
+          info => "Displays RSI YouTube channel URL"
+        },
+        twitch => {
+          info => "Displays RSI Twitch.TV channel URL"
+        },
+        hangover => {
+          info => "Displays Wingman's UStream channel URL, where he hosts his post WMH Hangover shows",
+          aliases => [ 'ustream', 'wmho' ],
+        },
+        wmh => {
+          info => "Displays info about WingMan's Hangar, what it is, when it is, where it is",
         },
       },
       In_channels => 1,
       Addressed => 0,
       Prefix => '!',
       Method => 'privmsg',
+      Ignore_unknown => 1,
+      Eat => 1,
     )
   );
 
@@ -278,19 +294,6 @@ mylog("irc_sc_rss_error...");
 ###########################################################################
 # URL Parsing
 ###########################################################################
-sub irc_botcmd_url {
-  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $poco = $sender->get_heap();
-
-  unless ($poco->is_channel_operator($channel, $nick)
-    or $poco->has_channel_voice($channel, $nick)) {
-    return;
-  }
-  $irc->yield('privmsg', $channel, "Running URL query on '" . $url . "', please wait ...");
-  $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $url } );
-}
-
 sub irc_sc_url_success {
   my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
   my $channel = delete $args->{_channel};
@@ -308,6 +311,42 @@ sub irc_sc_url_error {
 
 mylog("irc_sc_url_error...");
   $irc->yield('privmsg', $channel, $error);
+}
+###########################################################################
+
+###########################################################################
+# Informational commands
+###########################################################################
+# Youtube
+sub irc_botcmd_youtube {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "Roberts Space Industries YouTube channel is at: http://www.youtube.com/user/RobertsSpaceInd");
+}
+# Twitch.TV
+sub irc_botcmd_twitch {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "Roberts Space Industries Twitch.TV channel is at: http://www.twitch.tv/roberts_space_ind_ch_1");
+}
+# Hangover / Ustream
+sub irc_botcmd_hangover {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "Wingman's Hangover often happens ~15 minutes after the end of Wingman's Hangar and is available on Wingman's USTREAM channel: http://www.ustream.tv/channel/wingmancig");
+}
+sub irc_botcmd_wmh {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "WingMan's Hangar is a look at CIG/SC news each week.  It airs at 11am US Central time every Friday, excepting some holidays and special events.  You can watch it on the RSI Twitch.TV channel: http://www.twitch.tv/roberts_space_ind_ch_1");
 }
 ###########################################################################
 

@@ -1,17 +1,24 @@
-1) Make sure an alarm triggering doesn't re-set itself for the same second and end up spamming!
-2) Make URLParse check 'bare' URLs in more detail:
-  ...so  should NOT be counted as a possible URL!
-
 *) Make bot respond to invite, if it's to the config'd channel (in case of flood kick)
 *) Make Seen.pm notice quits
 *) Make Seen.pm output format better (time ago)
-*) Make !crowdfund command update $last_cf
 *) Rate-limit bot commands like !crowdfund (exclude ops?)
 *) Alpha slots watcher
 *) Use stored data to provide funds/alpha rates
-*) Reminders: i.e. Wingman's Hangar
 *) Ship stats
 *) Dev Tracker
+  Know how to do this directly now.
 *) Create a Q account for the bot and qauth
 *) Watch for new youtube videos (WMH)
+*) Forward twitch emails about going live to sc@fysh.org and hook up procmail
+  to trigger bot announce.
+*) Extra command: !calc - simply calculator
+
+Below here is DONE
+*) Extra command: !youtube - Show rsi channel URL
+*) Extra command: !twitch - show rsi twitch URL
+*) Extra command: !hangover / !wmho / !ustream - Show WM's ustream URL
+*) Make !crowdfund command update $last_cf
+*) Reminders: i.e. Wingman's Hangar
 *) Check content-type before parsing URL content
+2) Make URLParse check 'bare' URLs in more detail: ...so  should NOT be counted as a possible URL!
+1) Make sure an alarm triggering doesn't re-set itself for the same second and end up spamming!
