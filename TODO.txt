@@ -1,7 +1,6 @@
 *) Make bot respond to invite, if it's to the config'd channel (in case of flood kick)
 *) Make Seen.pm notice quits
 *) Make Seen.pm output format better (time ago)
-*) Make !crowdfund command update $last_cf
 *) Rate-limit bot commands like !crowdfund (exclude ops?)
 *) Alpha slots watcher
 *) Use stored data to provide funds/alpha rates
@@ -18,6 +17,7 @@
 *) Extra command: !calc - simply calculator
 
 Below here is DONE
+*) Make !crowdfund command update $last_cf
 *) Reminders: i.e. Wingman's Hangar
 *) Check content-type before parsing URL content
 2) Make URLParse check 'bare' URLs in more detail: ...so  should NOT be counted as a possible URL!

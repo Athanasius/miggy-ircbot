@@ -1,3 +1,4 @@
 Known Bugs:
 
+FIXED:
   *) !url command needs a URL as an argument, but doesn't complain if you just !url

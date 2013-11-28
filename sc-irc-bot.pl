@@ -288,6 +288,11 @@ sub irc_botcmd_url {
     or $poco->has_channel_voice($channel, $nick)) {
     return;
   }
+  if (!defined($url) or $url !~ /^http(s):\/\/[^\/]+\//) {
+    $irc->yield('privmsg', $channel, "Syntax: !url <valid http or https URL>");
+    return;
+  }
+  printf STDERR "URL is '%s'\n", $url;
   $irc->yield('privmsg', $channel, "Running URL query on '" . $url . "', please wait ...");
   $kernel->yield('get_url', { _channel => $channel, session => $session, quiet => 0, url => $url } );
 }
