@@ -68,6 +68,7 @@ sub _start {
       Addressed => 0,
       Prefix => '!',
       Method => 'privmsg',
+      Ignore_unknown => 1,
     )
   );
 
