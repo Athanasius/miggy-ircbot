@@ -11,12 +11,12 @@
 *) Watch for new youtube videos (WMH)
 *) Forward twitch emails about going live to sc@fysh.org and hook up procmail
   to trigger bot announce.
-*) Extra command: !youtube - Show rsi channel URL
-*) Extra command: !twitch - show rsi twitch URL
-*) Extra command: !hangover / !wmho / !ustream - Show WM's ustream URL
 *) Extra command: !calc - simply calculator
 
 Below here is DONE
+*) Extra command: !youtube - Show rsi channel URL
+*) Extra command: !twitch - show rsi twitch URL
+*) Extra command: !hangover / !wmho / !ustream - Show WM's ustream URL
 *) Make !crowdfund command update $last_cf
 *) Reminders: i.e. Wingman's Hangar
 *) Check content-type before parsing URL content
