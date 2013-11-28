@@ -40,7 +40,7 @@ sub PCI_register {
     $self->{Prefix}      = '!' if !defined $self->{Prefix};
     $self->{In_channels} = 1   if !defined $self->{In_channels};
     $self->{In_private}  = 1   if !defined $self->{In_private};
-    $self->{rx_cmd_args} = qr/^(\S+)(?:\s+(.+))?$/;
+    $self->{rx_cmd_args} = qr/^(\S+)(?:\s+(.+)?)?$/;
     $self->{irc} = $irc;
 
     $irc->plugin_register( $self, 'SERVER', qw(msg public) );
