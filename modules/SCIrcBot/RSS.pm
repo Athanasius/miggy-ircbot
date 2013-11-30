@@ -117,39 +117,54 @@ sub _parse_rss_items {
   push @params, $args->{session};
   my $result = $response->[0];
   if ( $result->is_success ) {
-    my $str = $result->content;
-    my $rss = XML::RSS->new();
-    eval { $rss->parse($str); };
-    if ($@) {
-      push @params, 'irc_sc_rss_error', $args, $@;
+    if (!defined($result->header('Content-Type')) or $result->header('Content-Type') ne "application/rss+xml") {
+#printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type\n";
+      my $ct;
+      if (!defined($result->header('Content-Type')) or $result->header('Content-Type') eq "") {
+#printf STDERR "_PARSE_RSS_ITEMS: !defined or empty Content-Type\n";
+        $ct = "<empty>";
+      } else {
+        $ct = $result->header('Content-Type');
+#printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type is '%s'\n", $result->header('Content-Type');
+      }
+      push(@params, 'irc_sc_rss_error', $args, "Incorrect Content-Type: " . $ct);
+    } elsif ($result->content !~ /<rss version/) {
+      push(@params, 'irc_sc_rss_error', $args, "No RSS tag/version");
     } else {
-      my $sth = $rss_db->prepare("INSERT INTO rsi_commlink (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
-      push @params, 'irc_sc_rss_newitems', $args;
-      foreach my $item (@{$rss->{'items'}}) {
-#        print "title: $item->{'title'}\n";
-#        print "link: $item->{'link'}\n";
-        if (!defined($rss_items{$item->{'permaLink'}})) {
-#          print " IS NEW!\n";
-          $rss_items{$item->{'permaLink'}} = $item;
-          push @params, $item;
+      my $str = $result->content;
+      my $rss = XML::RSS->new();
+      eval { $rss->parse($str); };
+      if ($@) {
+        push @params, 'irc_sc_rss_error', $args, $@;
+      } else {
+        my $sth = $rss_db->prepare("INSERT INTO rsi_commlink (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+        push @params, 'irc_sc_rss_newitems', $args;
+        foreach my $item (@{$rss->{'items'}}) {
+#         print "title: $item->{'title'}\n";
+#         print "link: $item->{'link'}\n";
+          if (!defined($rss_items{$item->{'permaLink'}})) {
+#           print " IS NEW!\n";
+            $rss_items{$item->{'permaLink'}} = $item;
+            push @params, $item;
 
-          my %rss_item = ( 'title' => "NULL", 'link' => "NULL", 'description' => "NULL", 'author' => "NULL", 'category' => "NULL", 'comments' => "NULL", 'enclosure' => "NULL", 'guid' => "NULL", 'pubdate' => "NULL", 'source' => "NULL", 'content' => "NULL" );
-          foreach my $f (keys($item)) {
-#            print "Item field: " . $f . " = '" . $item->{$f} . "'\n";
-            if ($f eq "permaLink") {
-              $rss_item{'guid'} = $item->{$f};
-            } elsif ($f eq "pubDate") {
-              $rss_item{'pubdate'} = $item->{$f};
-            } elsif ($f eq "content") {
-              $rss_item{$f} = ${$item->{$f}}{'encoded'};
-#              foreach my $c (keys($item->{$f})) {
-#                print "Content field: " . $c . " = '" . ${$item->{$f}}{$c} . "'\n";
-#              }
-            } else {
-              $rss_item{$f} = $item->{$f};
+            my %rss_item = ( 'title' => "NULL", 'link' => "NULL", 'description' => "NULL", 'author' => "NULL", 'category' => "NULL", 'comments' => "NULL", 'enclosure' => "NULL", 'guid' => "NULL", 'pubdate' => "NULL", 'source' => "NULL", 'content' => "NULL" );
+            foreach my $f (keys($item)) {
+#             print "Item field: " . $f . " = '" . $item->{$f} . "'\n";
+              if ($f eq "permaLink") {
+                $rss_item{'guid'} = $item->{$f};
+              } elsif ($f eq "pubDate") {
+                $rss_item{'pubdate'} = $item->{$f};
+              } elsif ($f eq "content") {
+                $rss_item{$f} = ${$item->{$f}}{'encoded'};
+#               foreach my $c (keys($item->{$f})) {
+#                 print "Content field: " . $c . " = '" . ${$item->{$f}}{$c} . "'\n";
+#               }
+              } else {
+                $rss_item{$f} = $item->{$f};
+              }
             }
+            $sth->execute($rss_item{'title'}, $rss_item{'link'}, $rss_item{'description'}, $rss_item{'author'}, $rss_item{'category'}, $rss_item{'comments'}, $rss_item{'enclosure'}, $rss_item{'guid'}, $rss_item{'pubdate'}, $rss_item{'source'}, $rss_item{'content'});
           }
-          $sth->execute($rss_item{'title'}, $rss_item{'link'}, $rss_item{'description'}, $rss_item{'author'}, $rss_item{'category'}, $rss_item{'comments'}, $rss_item{'enclosure'}, $rss_item{'guid'}, $rss_item{'pubdate'}, $rss_item{'source'}, $rss_item{'content'});
         }
       }
     }
