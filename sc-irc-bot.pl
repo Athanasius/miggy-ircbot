@@ -40,6 +40,7 @@ POE::Session->create(
       irc_botcmd_twitch
       irc_botcmd_hangover
       irc_botcmd_wmh
+      irc_botcmd_commlink
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
@@ -76,6 +77,10 @@ sub _start {
         },
         wmh => {
           info => "Displays info about WingMan's Hangar, what it is, when it is, where it is",
+        },
+        commlink => {
+          info => "Displays the URL for the RSI Comm-Link",
+          aliases => [ 'comm-link', 'latest', 'news' ],
         },
       },
       In_channels => 1,
@@ -347,6 +352,13 @@ sub irc_botcmd_wmh {
   my $poco = $sender->get_heap();
 
   $irc->yield('privmsg', $channel, "WingMan's Hangar is a look at CIG/SC news each week.  It airs at 11am US Central time every Friday, excepting some holidays and special events.  You can watch it on the RSI Twitch.TV channel: http://www.twitch.tv/roberts_space_ind_ch_1");
+}
+sub irc_botcmd_commlink {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "The latest news from Roberts Space Industries and Cloud Imperium Games about Star Citizen should be on: http://www.robertsspaceindustries.com/comm-link/ (NB: A few posts only go to the front page: http://www.robertsspaceindustries.com/ )");
 }
 ###########################################################################
 
