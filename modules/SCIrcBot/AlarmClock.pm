@@ -13,21 +13,13 @@ use Data::Dumper;
 use constant { SEC => 0, MIN => 1, HOUR => 2, MDAY => 3, MON => 4, YEAR => 5, WDAY => 6, YDAY => 7, ISDST => 8, };
 
 my %alarms = (
-  'wmh29nov' => {
+  'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
-    'announce_text' => "There is no Wingman's Hangar this week (29th Nov 2013)",
-    'time' => 'Fri Nov 29 2013 11:00:00',
+    'announce_text' => "Wingman's hangar should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
+    'time' => 'Fri 11:00:00',
     'timezone' => 'CST6CDT',
-    'pre_announce_times' => [1440, 300, 180, 120, 60, 30, 15, 5], # Minutes
-    'pre_announce_text' => "There is no Wingman's Hangar this week (29th Nov 2013) in %s !",
-  },
-  'wmh06dec' => {
-    'fullname' => "Wingman's Hangar Reminder",
-    'announce_text' => "Wingman's hangar is starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Fri Dec  6 2013 11:00:00',
-    'timezone' => 'CST6CDT',
-    'pre_announce_times' => [180, 120, 60, 30, 15, 5], # Minutes
-    'pre_announce_text' => "Wingman's Hangar starts in %s: http://twitch.tv/roberts_space_ind_ch_1",
+    'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
+    'pre_announce_text' => "Wingman's Hangar should start in %s: http://twitch.tv/roberts_space_ind_ch_1",  
   },
 );
 
