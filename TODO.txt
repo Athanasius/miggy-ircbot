@@ -12,6 +12,7 @@
 *) Forward twitch emails about going live to sc@fysh.org and hook up procmail
   to trigger bot announce.
 *) Extra command: !calc - simply calculator
+*) Extra command: !pledgewatch - Link to https://docs.google.com/spreadsheet/ccc?key=0Ariqrruk80VHdHVMREsxRWkwTXg2Rlc3clE0a3RwaXc#gid=4
 
 Below here is DONE
 *) Extra command: !youtube - Show rsi channel URL
