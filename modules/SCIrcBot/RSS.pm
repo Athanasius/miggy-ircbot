@@ -47,15 +47,17 @@ sub PCI_register {
   }
   $self->{session_id} = POE::Session->create(
   object_states => [
-     $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items) ],
+     $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
   ],
   )->ID();
   $poe_kernel->state( 'get_rss_items', $self );
+  $poe_kernel->state( 'get_rss_latest', $self );
   return 1;
 }
 
 sub PCI_unregister {
   my ($self,$irc) = splice @_, 0, 2;
+  $poe_kernel->state( 'get_rss_latest' );
   $poe_kernel->state( 'get_rss_items' );
   $poe_kernel->call( $self->{session_id} => '_shutdown' );
   delete $self->{irc};
@@ -82,6 +84,7 @@ sub _shutdown {
 # is also tied to a database file.
 #
 # get_rss_items(): User-command trigger for testing
+# get_rss_latest(): User-command to return latest item details
 # rss_check(): Perform a timed RSS check
 # _get_rss_items(): Actually retrieve current items
 # _parse_rss_items(): Triggered when we receive items back.  Check which ones
@@ -139,7 +142,8 @@ sub _parse_rss_items {
       } else {
         my $sth = $rss_db->prepare("INSERT INTO rsi_commlink (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
         push @params, 'irc_sc_rss_newitems', $args;
-        foreach my $item (@{$rss->{'items'}}) {
+        # reverse() should mean we insert latest item as the highest ID in the DB
+        foreach my $item (reverse(@{$rss->{'items'}})) {
 #         print "title: $item->{'title'}\n";
 #         print "link: $item->{'link'}\n";
           if (!defined($rss_items{$item->{'permaLink'}})) {
@@ -172,6 +176,46 @@ sub _parse_rss_items {
     push @params, 'irc_sc_rss_error', $args, $result->status_line;
   }
   $kernel->post( @params );
+  undef;
+}
+
+sub get_rss_latest {
+  my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
+#printf STDERR "GET_ITEMS\n";
+  $kernel->post( $self->{session_id}, '_get_rss_latest', @_[ARG0..$#_] );
+  undef;
+}
+
+sub _get_rss_latest {
+  my ($kernel, $self) = @_[KERNEL, OBJECT];
+  my %args;
+#printf STDERR "_GET_RSS_LATEST\n";
+  if ( ref $_[ARG0] eq 'HASH' ) {
+     %args = %{ $_[ARG0] };
+  } else {
+     %args = @_[ARG0..$#_];
+  }
+  $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
+
+  my @params;
+  push @params, $args{session};
+
+  my $sth = $rss_db->prepare("SELECT * FROM rsi_commlink ORDER BY id DESC LIMIT 1");
+#printf STDERR "_GET_RSS_LATEST: Executing query\n";
+  my $res = $sth->execute();
+  while (my $row = $sth->fetchrow_hashref) {
+#printf STDERR "_GET_RSS_LATEST: Got at least one row\n";
+    push @params, 'irc_sc_rss_latest', \%args;
+    push @params, $row;
+    $kernel->post( @params );
+    return;
+  }
+  # else
+printf STDERR "_GET_RSS_LATEST: No data?\n";
+
+  push @params, 'irc_sc_rss_error', \%args, "Coudn't retrieve latest RSS item from local database";
+  $kernel->post( @params );
+
   undef;
 }
 ###########################################################################

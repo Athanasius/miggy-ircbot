@@ -34,7 +34,7 @@ POE::Session->create(
       irc_ctcp_action
       irc_invite
       irc_botcmd_crowdfund irc_sc_crowdfund_success irc_sc_crowdfund_error
-      irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error
+      irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error irc_sc_rss_latest
       irc_sc_url_success irc_sc_url_error
       irc_botcmd_alarm irc_sc_alarm_announce
       irc_botcmd_youtube
@@ -64,7 +64,7 @@ sub _start {
           aliases => [ 'cf' ],
         },
         rss => {
-          info => 'Takes no arguments, checks RSI RSS feed. OPS/VOICE ONLY',
+          info => 'With no argument checks RSI RSS feed (OPS/VOICE ONLY).  With "latest" as argument it will repeat the latest posted item details (anyone).',
         },
         youtube => {
           info => "Displays RSI YouTube channel URL"
@@ -287,16 +287,22 @@ sub handle_rss_check {
 }
 
 sub irc_botcmd_rss {
-  my ($kernel, $session, $sender, $channel) = @_[KERNEL, SESSION, SENDER, ARG1];
+  my ($kernel, $session, $sender, $channel, $arg) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  unless ($poco->is_channel_operator($channel, $nick)
-    or $poco->has_channel_voice($channel, $nick)) {
-    return;
+  if (defined($arg)) {
+    if ($arg eq "latest") {
+      $kernel->yield('get_rss_latest', { _channel => $channel, session => $session, quiet => 0 } );
+    }
+  } else {
+    unless ($poco->is_channel_operator($channel, $nick)
+      or $poco->has_channel_voice($channel, $nick)) {
+      return;
+    }
+    $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
+    $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
   }
-  $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
-  $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
 }
 
 sub irc_sc_rss_newitems {
@@ -309,6 +315,17 @@ sub irc_sc_rss_newitems {
     }
   } elsif (! $args->{quiet}) {
       $irc->yield('privmsg', $channel, 'No new Comm-links at this time');
+  }
+}
+
+sub irc_sc_rss_latest {
+  my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
+  my $channel = delete $args->{_channel};
+
+printf STDERR "_IRC_SC_RSS_LATEST\n";
+  for my $i (@_[ARG1..$#_]) {
+#printf STDERR "_IRC_SC_RSS_LATEST: Spitting out item\n";
+    $irc->yield('privmsg', $channel, 'Latest RSI Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
 }
 
