@@ -15,12 +15,11 @@ use constant { SEC => 0, MIN => 1, HOUR => 2, MDAY => 3, MON => 4, YEAR => 5, WD
 my %alarms = (
   'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
-    'announce_text' => "Wingman's hangar is starting now! http://twitch.tv/roberts_space_ind_ch_1",
+    'announce_text' => "Wingman's hangar should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
     'time' => 'Fri 11:00:00',
     'timezone' => 'CST6CDT',
     'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
-#    'pre_announce_times' => [2,1], # Minutes
-    'pre_announce_text' => "Wingman's Hangar starts in %s: http://twitch.tv/roberts_space_ind_ch_1",
+    'pre_announce_text' => "Wingman's Hangar should start in %s: http://twitch.tv/roberts_space_ind_ch_1", 
   },
   '1yrstream' => {
     'fullname' => "1 Year Anniversay Stream",
