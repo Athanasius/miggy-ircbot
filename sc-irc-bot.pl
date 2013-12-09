@@ -32,6 +32,7 @@ POE::Session->create(
       irc_join
       irc_public
       irc_ctcp_action
+      irc_invite
       irc_botcmd_crowdfund irc_sc_crowdfund_success irc_sc_crowdfund_error
       irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error
       irc_sc_url_success irc_sc_url_error
@@ -161,6 +162,30 @@ sub irc_join {
   if ($nick eq $irc->nick_name()) {
     #print "irc_join - It's me! Sending greeting...\n";
     $irc->yield(privmsg => $channel, 'Reporting for duty!');
+  }
+}
+
+#irc_invite
+sub irc_invite {
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $channel = $_[ARG1];
+  my $irc = $_[SENDER]->get_heap();
+
+  printf "irc_invite - Nick: '%s', Channel: '%s'\n", $nick, $channel;
+  if ($channel eq $config->getconf('channel')) {
+    print " irc_invite: For our channel\n";
+    my $on_channel = undef;
+    foreach my $c ( keys %{$irc->channels()} ) {
+      if ($c eq $config->getconf('channel')) {
+        print " irc_invite: We're currently on our channel\n";
+        $on_channel = $c;
+        last;
+      }
+    }
+    if (!defined($on_channel)) {
+      printf " irc_invite: Not currently on configured channel, attempting to join '%s'\n", $channel;
+      $irc->yield(join => $channel);
+    }
   }
 }
 
