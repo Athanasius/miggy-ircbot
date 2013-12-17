@@ -21,21 +21,29 @@ my %alarms = (
     'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
     'pre_announce_text' => "Wingman's Hangar should start in %s: http://twitch.tv/roberts_space_ind_ch_1", 
   },
-  '1yrstream' => {
-    'fullname' => "1 Year Anniversay Stream",
-    'announce_text' => "1 year anniversay stream should be starting now! http://www.youtube.com/watch?v=O8HvfFCysYU",
-    'time' => 'Thu Oct 10 2013 18:30:00',
-    'timezone' => 'CST6CDT',
-    'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
-    'pre_announce_text' => "1 year anniversay stream should be starting in %s http://www.youtube.com/watch?v=O8HvfFCysYU",
-  },
-  '2ndyearstart' => {
-    'fullname' => "Start of 2nd Year Stream",
-    'announce_text' => "Live Stream for start of 2nd year should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Tue Nov 26 2013 11:00:00',
+#  '1yrstream' => {
+#    'fullname' => "1 Year Anniversay Stream",
+#    'announce_text' => "1 year anniversay stream should be starting now! http://www.youtube.com/watch?v=O8HvfFCysYU",
+#    'time' => 'Thu Oct 10 2013 18:30:00',
+#    'timezone' => 'CST6CDT',
+#    'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
+#    'pre_announce_text' => "1 year anniversay stream should be starting in %s http://www.youtube.com/watch?v=O8HvfFCysYU",
+#  },
+#  '2ndyearstart' => {
+#    'fullname' => "Start of 2nd Year Stream",
+#    'announce_text' => "Live Stream for start of 2nd year should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
+#    'time' => 'Tue Nov 26 2013 11:00:00',
+#    'timezone' => 'PST8PDT',
+#    'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
+#    'pre_announce_text' => "Live Stream for start of 2nd year should be starting in %s http://twitch.tv/roberts_space_ind_ch_1",
+#  },
+  'xmasdec2013stream' => {
+    'fullname' => "Xmas 2013 Live Stream",
+    'announce_text' => 'Xmas 2013 Live Stream ("updates on Squadron 42, The Hangar and Dogfighting!") should be starting now! http://twitch.tv/roberts_space_ind_ch_1',
+    'time' => 'Fri Dec 20 2013 09:00:00',
     'timezone' => 'PST8PDT',
-    'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
-    'pre_announce_text' => "Live Stream for start of 2nd year should be starting in %s http://twitch.tv/roberts_space_ind_ch_1",
+    'pre_announce_times' => [2880, 1440, 300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
+    'pre_announce_text' => 'Xmas 2013 Live Stream ("updates on Squadron 42, The Hangar and Dogfighting!") should be starting in %s http://twitch.tv/roberts_space_ind_ch_1',
   },
 );
 
