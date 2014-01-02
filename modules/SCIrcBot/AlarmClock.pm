@@ -13,14 +13,14 @@ use Data::Dumper;
 use constant { SEC => 0, MIN => 1, HOUR => 2, MDAY => 3, MON => 4, YEAR => 5, WDAY => 6, YDAY => 7, ISDST => 8, };
 
 my %alarms = (
-#  'wmh' => {
-#    'fullname' => "Wingman's Hangar Reminder",
-#    'announce_text' => "Wingman's hangar should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
-#    'time' => 'Fri 11:00:00',
-#    'timezone' => 'CST6CDT',
-#    'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
-#    'pre_announce_text' => "Wingman's Hangar should start in %s: http://twitch.tv/roberts_space_ind_ch_1", 
-#  },
+  'wmh' => {
+    'fullname' => "Wingman's Hangar Reminder",
+    'announce_text' => "Wingman's hangar should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
+    'time' => 'Fri 11:00:00',
+    'timezone' => 'CST6CDT',
+    'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
+    'pre_announce_text' => "Wingman's Hangar should start in %s: http://twitch.tv/roberts_space_ind_ch_1", 
+  },
 #  '1yrstream' => {
 #    'fullname' => "1 Year Anniversay Stream",
 #    'announce_text' => "1 year anniversay stream should be starting now! http://www.youtube.com/watch?v=O8HvfFCysYU",
@@ -37,14 +37,14 @@ my %alarms = (
 #    'pre_announce_times' => [300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
 #    'pre_announce_text' => "Live Stream for start of 2nd year should be starting in %s http://twitch.tv/roberts_space_ind_ch_1",
 #  },
-  'xmasdec2013stream' => {
-    'fullname' => "Xmas 2013 Live Stream",
-    'announce_text' => 'Xmas 2013 Live Stream ("updates on Squadron 42, The Hangar and Dogfighting!") should be starting now! http://twitch.tv/roberts_space_ind_ch_1',
-    'time' => 'Fri Dec 20 2013 09:00:00',
-    'timezone' => 'PST8PDT',
-    'pre_announce_times' => [2880, 1440, 300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
-    'pre_announce_text' => 'Xmas 2013 Live Stream ("updates on Squadron 42, The Hangar and Dogfighting!") should be starting in %s http://twitch.tv/roberts_space_ind_ch_1',
-  },
+#  'xmasdec2013stream' => {
+#    'fullname' => "Xmas 2013 Live Stream",
+#    'announce_text' => 'Xmas 2013 Live Stream ("updates on Squadron 42, The Hangar and Dogfighting!") should be starting now! http://twitch.tv/roberts_space_ind_ch_1',
+#    'time' => 'Fri Dec 20 2013 09:00:00',
+#    'timezone' => 'PST8PDT',
+#    'pre_announce_times' => [2880, 1440, 300, 180, 120, 60, 45, 30, 15, 5, 1], # Minutes
+#    'pre_announce_text' => 'Xmas 2013 Live Stream ("updates on Squadron 42, The Hangar and Dogfighting!") should be starting in %s http://twitch.tv/roberts_space_ind_ch_1',
+#  },
 );
 
 sub new {
