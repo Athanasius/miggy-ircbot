@@ -25,7 +25,7 @@ sub PCI_register {
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
-      Timeout         => 30,
+      Timeout         => 300,
       FollowRedirects => $self->{follow_redirects},
     );
   }
