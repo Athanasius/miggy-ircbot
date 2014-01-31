@@ -154,8 +154,13 @@ sub _start {
 ###########################################################################
 sub irc_001 {
   my ($kernel, $sender) = @_[KERNEL, SENDER];
+  my $irc = $_[SENDER]->get_heap();
 
   print " irc_001:\n";
+
+  # Set mode +x
+  print " Attempt to set usermode +x\n";
+  $irc->yield('mode', $config->getconf('nickname') . " +x");
 
   # Lets authenticate with Quakenet's Q bot
   my $qauth = $config->getconf('qauth');
