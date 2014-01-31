@@ -15,6 +15,8 @@ our %config = (
   'rss_url' => 'https://robertsspaceindustries.com/comm-link/rss',
   'rss_filestore' => 'rss.db',
   'rss_check_time' => 300,
+  'qauth' => '',
+  'qpass' => '',
 );
 
 sub new {
@@ -60,6 +62,10 @@ sub new {
       $config{'rss_filestore'} = $1;
     } elsif (/^rss_check_time:\s+(.*)$/i) {
       $config{'rss_check_time'} = $1;
+    } elsif (/^qauth:\s+(.*)$/i) {
+      $config{'qauth'} = $1;
+    } elsif (/^qpass:\s+(.*)$/i) {
+      $config{'qpass'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }

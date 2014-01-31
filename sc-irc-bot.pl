@@ -28,7 +28,7 @@ my $irc = POE::Component::IRC::Qnet::State->spawn();
 
 POE::Session->create(
   package_states => [
-    main => [ qw(_default _start
+    main => [ qw(_default _start irc_001
       irc_join
       irc_public
       irc_ctcp_action
@@ -152,6 +152,18 @@ sub _start {
 ###########################################################################
 # Responding to IRC events
 ###########################################################################
+sub irc_001 {
+  my ($kernel, $sender) = @_[KERNEL, SENDER];
+
+  print " irc_001:\n";
+
+  print "  Attempting Q Auth...\n";
+  # Lets authenticate with Quakenet's Q bot
+  $kernel->post( $sender => qbot_auth => $config->getconf('qauth') => $config->getconf('qpass') );
+
+  return;
+}
+
 sub irc_join {
   my $nick = (split /!/, $_[ARG0])[0];
   my $channel = $_[ARG1];
