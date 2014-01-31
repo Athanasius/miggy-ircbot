@@ -16,8 +16,8 @@ my %alarms = (
   'wmh' => {
     'fullname' => "Wingman's Hangar Reminder",
     'announce_text' => "Wingman's hangar should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
-    'time' => 'Fri 11:00:00',
-    'timezone' => 'CST6CDT',
+    'time' => 'Wed 12:00:00',
+    'timezone' => 'EST6EDT',
     'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
     'pre_announce_text' => "Wingman's Hangar should start in %s: http://twitch.tv/roberts_space_ind_ch_1", 
   },
