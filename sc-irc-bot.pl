@@ -157,9 +157,13 @@ sub irc_001 {
 
   print " irc_001:\n";
 
-  print "  Attempting Q Auth...\n";
   # Lets authenticate with Quakenet's Q bot
-  $kernel->post( $sender => qbot_auth => $config->getconf('qauth') => $config->getconf('qpass') );
+  my $qauth = $config->getconf('qauth');
+  my $qpass = $config->getconf('qpass');
+  if (defined($qauth) and $qauth ne '' and defined($qpass) and $qpass ne '') {
+    print "  Qauth and Qpass appear set. Attempting Q Auth...\n";
+    $kernel->post( $sender => qbot_auth => $config->getconf('qauth') => $config->getconf('qpass') );
+  }
 
   return;
 }
