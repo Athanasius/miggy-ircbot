@@ -222,10 +222,10 @@ sub get_current_cf {
   my $crowd = shift;
 
   if (defined($crowd) and defined(${$crowd}{'funds'})) {
-    return sprintf("Crowdfund Total: \$%s / Fans: %s / Alpha Slots Left: %s",
+    return sprintf("Crowdfund Total: \$%s / Fans: %s",
       prettyprint(${$crowd}{'funds'} / 100.0),
-      prettyprint(${$crowd}{'fans'}),
-      prettyprint(${$crowd}{'alpha_slots_left'})
+      prettyprint(${$crowd}{'fans'})
+#      prettyprint(${$crowd}{'alpha_slots_left'})
     );
   } elsif (defined($crowd) && defined(${$crowd}{'error'})) {
     return ${$crowd}{'error'};
