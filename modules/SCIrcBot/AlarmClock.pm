@@ -13,6 +13,14 @@ use Data::Dumper;
 use constant { SEC => 0, MIN => 1, HOUR => 2, MDAY => 3, MON => 4, YEAR => 5, WDAY => 6, YDAY => 7, ISDST => 8, };
 
 my %alarms = (
+  'atv' => {
+    'fullname' => 'Around the Verse',
+    'announce_text' => "The latest Around the Verse episode should be available on YouTube any time now! https://www.youtube.com/user/RobertsSpaceInd",
+    'time' => 'Wed 09:00:00',
+    'timezone' => 'PST8PDT',
+    'pre_announce_times' => [180, 120, 60, 30, 15, 5, 1], # Minutes
+    'pre_announce_text' => "The latest Around the Verse episode should be available on YouTube in %s: https://www.youtube.com/user/RobertsSpaceInd",
+  }
 #  'wmh' => {
 #    'fullname' => "Wingman's Hangar Reminder",
 #    'announce_text' => "Wingman's hangar should be starting now! http://twitch.tv/roberts_space_ind_ch_1",
