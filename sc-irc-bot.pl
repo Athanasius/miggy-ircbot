@@ -41,6 +41,8 @@ POE::Session->create(
       irc_botcmd_twitch
       irc_botcmd_hangover
       irc_botcmd_wmh
+      irc_botcmd_atv
+      irc_botcmd_10ftc
       irc_botcmd_commlink
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
@@ -77,11 +79,18 @@ sub _start {
           aliases => [ 'ustream', 'wmho' ],
         },
         wmh => {
-          info => "Displays info about WingMan's Hangar, what it is, when it is, where it is",
+          info => "Displays info about WingMan's Hangar, what it was, where to watch archived episodes etc.",
         },
         commlink => {
           info => "Displays the URL for the RSI Comm-Link",
           aliases => [ 'comm-link', 'latest', 'news' ],
+        },
+        'atv' => {
+          info => "Displays info for About the Verse, what it is, when it's available etc.",
+        },
+        '10ftc' => {
+          info => "Displays info about 10 For the Chairman, what it is, when it's available etc.",
+          aliases => [ 'tftc' ],
         },
       },
       In_channels => 1,
@@ -407,14 +416,31 @@ sub irc_botcmd_hangover {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Wingman's Hangover often happens ~15 minutes after the end of Wingman's Hangar and is available on Wingman's USTREAM channel: http://www.ustream.tv/channel/wingmancig");
+  $irc->yield('privmsg', $channel, "Wingman's Hangover was when WingMan streamed on ustream ~15 minutes after the end of Wingman's Hangar.  He might still pop up on there now and then: http://www.ustream.tv/channel/wingmancig");
 }
+# Wingman's Hangar
 sub irc_botcmd_wmh {
   my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "WingMan's Hangar is a look at CIG/SC news each week.  It airs at 11am US Central time every Wednesday, excepting some holidays and special events.  You can watch it on the RSI Twitch.TV channel: http://www.twitch.tv/roberts_space_ind_ch_1");
+  $irc->yield('privmsg', $channel, "WingMan's Hangar was a look at CIG/SC news each week.  It aired at 11am US Central time every Wednesday, excepting some holidays and special events, and ran for a total of 72 episodes.  You can watch the archived episodes on YouTube: https://www.youtube.com/playlist?list=PLVct2QDhDrB0sipIorv4skO-XR8bAO7Pp");
+}
+# Around the Verse
+sub irc_botcmd_atv {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "Around the Verse is a look at CIG/SC news each week.  It airs at 9am US Pacific time every Wednesday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
+}
+# Ten For The Chairman
+sub irc_botcmd_10ftc {
+  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
+  my $nick = (split /!/, $_[ARG0])[0];
+  my $poco = $sender->get_heap();
+
+  $irc->yield('privmsg', $channel, "10 For the Chairman is a weekly show featuring Chris Roberts answering 10 subscribers' questions.  It airs at 3pm US Pacific time every Monday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
 }
 sub irc_botcmd_commlink {
   my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
