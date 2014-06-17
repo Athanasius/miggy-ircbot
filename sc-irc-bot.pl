@@ -432,7 +432,7 @@ sub irc_botcmd_atv {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Around the Verse is a look at CIG/SC news each week.  It airs at 9am US Pacific time every Wednesday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
+  $irc->yield('privmsg', $channel, "Around the Verse is a look at CIG/SC news each week.  It airs at 9am US Pacific time every Thursday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
 }
 # Ten For The Chairman
 sub irc_botcmd_10ftc {
