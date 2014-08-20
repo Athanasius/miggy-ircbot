@@ -87,7 +87,8 @@ sub _get_crowdfund {
     {
       'fans' => 'true',
       'funds' => 'true',
-      'alpha_slots' => 'true'
+      'alpha_slots' => 'true',
+      'fleet' => 'true'
     }
   );
 #foreach my $a (keys(%args)) { printf STDERR "arg{%s} = %s\n", $a, $args{$a}; }
@@ -222,9 +223,10 @@ sub get_current_cf {
   my $crowd = shift;
 
   if (defined($crowd) and defined(${$crowd}{'funds'})) {
-    return sprintf("Crowdfund Total: \$%s / Fans: %s",
+    return sprintf("Crowdfund Total: \$%s / Fans: %s / Fleet: %s",
       prettyprint(${$crowd}{'funds'} / 100.0),
-      prettyprint(${$crowd}{'fans'})
+      prettyprint(${$crowd}{'fans'}),
+      prettyprint(${$crowd}{'fleet'})
 #      prettyprint(${$crowd}{'alpha_slots_left'})
     );
   } elsif (defined($crowd) && defined(${$crowd}{'error'})) {
