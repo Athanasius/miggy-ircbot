@@ -18,7 +18,7 @@ my %alarms = (
     'announce_text' => "The latest Around the Verse episode should be available on YouTube any time now! https://www.youtube.com/user/RobertsSpaceInd",
     'time' => 'Thu 09:00:00',
     'timezone' => 'PST8PDT',
-    'pre_announce_times' => [180, 120, 60, 5], # Minutes
+    'pre_announce_times' => [180, 120, 60], # Minutes
     'pre_announce_text' => "The latest Around the Verse episode should be available on YouTube in %s: https://www.youtube.com/user/RobertsSpaceInd",
   },
   'tftc' => {
@@ -26,7 +26,7 @@ my %alarms = (
     'announce_text' => "The latest 10 For the Chairman episode should be available on YouTube any time now! https://www.youtube.com/user/RobertsSpaceInd",
     'time' => 'Mon 15:00:00',
     'timezone' => 'PST8PDT',
-    'pre_announce_times' => [180, 120, 60, 5], # Minutes
+    'pre_announce_times' => [180, 120, 60], # Minutes
     'pre_announce_text' => "The latest 10 For the Chairman episode should be available on YouTube in %s: https://www.youtube.com/user/RobertsSpaceInd",
   },
 #  'wmh' => {
