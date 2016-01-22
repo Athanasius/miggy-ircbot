@@ -52,6 +52,7 @@ sub irc_miggybot_url_error {
 
 mylog("irc_miggybot_url_error...");
   print $error, "\n";
+  exit(0);
 }
 ###########################################################################
 
