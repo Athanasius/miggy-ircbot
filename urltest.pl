@@ -4,8 +4,14 @@
 use strict;
 use POE;
 use POE::Component::IRC;
+use MiggyIRCBot::ConfigFile;
 use MiggyIRCBot::URLParse;
 use POSIX qw/strftime/;
+
+my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
+if (!defined($config)) {
+  die "No config!";
+}
 
 my $irc = POE::Component::IRC->spawn();
 
@@ -25,7 +31,9 @@ sub _start {
   my ($kernel, $heap, $session) = @_[KERNEL, HEAP, SESSION];
 
   $irc->plugin_add('MiggyIRCBotURLParse',
-    MiggyIRCBot::URLParse->new()
+    MiggyIRCBot::URLParse->new(
+            youtube_api_key => $config->getconf('youtube_api_key')
+    )
   );
 
   $kernel->yield('get_url', { _channel => "#test", session => $session, quiet => 0, url => $ARGV[0] } );
