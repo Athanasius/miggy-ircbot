@@ -130,7 +130,9 @@ sub _start {
   $irc->plugin_add('SCAlarmClock',
 
   $irc->plugin_add('MiggyIRCBotURLParse',
-    MiggyIRCBot::URLParse->new()
+    MiggyIRCBot::URLParse->new(
+      youtube_api_key => $config->getconf('youtube_api_key')
+    )
   );
 
   $irc->plugin_add('MiggyIRCBotAlarmClock',
