@@ -104,7 +104,7 @@ sub _parse_url {
     } else {
       $error .=  $res->status_line;
     }
-    push @params, 'irc_sc_url_error', $args, $error;
+    push @params, 'irc_miggybot_url_error', $args, $error;
   } else {
 #printf STDERR "_PARSE_URL: res == success\n";
     if ($res->header('Content-Type') =~ /^text\/(ht|x)ml/) {
@@ -113,13 +113,13 @@ sub _parse_url {
       $tree->eof();
       my $title = $tree->look_down('_tag', 'title');
       if ($title) {
-        push @params, 'irc_sc_url_success', $args, $title->as_text;
+        push @params, 'irc_miggybot_url_success', $args, $title->as_text;
       } else {
-        push @params, 'irc_sc_url_error', $args, "No <title> found in URL content";
+        push @params, 'irc_miggybot_url_error', $args, "No <title> found in URL content";
       }
     } else {
       $args->{'quiet'} = 1;
-      push @params, 'irc_sc_url_success', $args, "That was not an HTML page";
+      push @params, 'irc_miggybot_url_success', $args, "That was not an HTML page";
     }
   }
 

@@ -138,7 +138,7 @@ sub _alarm_announce {
 
   printf STDERR "_alarm_announce for '%s'\n", $alarm;
 
-  $kernel->post($args->{session_id}, 'irc_sc_alarm_announce', $alarm, $alarms{$alarm}, defined($args->{pre}) ? $args->{pre} : undef);
+  $kernel->post($args->{session_id}, 'irc_miggybot_alarm_announce', $alarm, $alarms{$alarm}, defined($args->{pre}) ? $args->{pre} : undef);
   foreach my $a (keys(%$args)) { printf STDERR "args{'%s'} = %s\n", $a, ${$args}{$a}; } 
   schedule_alarm($alarm, $kernel, %$args);
 
