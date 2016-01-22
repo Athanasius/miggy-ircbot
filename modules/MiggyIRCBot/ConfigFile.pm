@@ -1,18 +1,16 @@
 package MiggyIRCBot::ConfigFile;
 
 our %config = (
-  'nickname' => '^Lumi^',
-  'ircname' => 'Henri Lumi, the helpful 300i pilot',
-  'channel' => '#keep-nicks',
+  'nickname' => 'Cmdr^Jameson',
+  'ircname' => 'Commander Jameson - *the* original commander',
+  'channel' => '#elite-dangerous',
   'ircserver' => 'irc.quakenet.org',
   'ircport' => 6667,
   'connect_delay' => 60,
   'console_port' => 3337,
   'console_password' => 'UnwindLamps',
   'seen_filestore' => 'seen_filestore.db',
-  'crowdfund_funds_check_time' => 300,
-  'crowdfund_url' => 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats',
-  'rss_url' => 'https://robertsspaceindustries.com/comm-link/rss',
+  'rss_url' => 'http://www.miggy.org/games/elite-dangerous/devtracker/ed-dev-posts.rss',
   'rss_filestore' => 'rss.db',
   'rss_check_time' => 300,
   'qauth' => '',

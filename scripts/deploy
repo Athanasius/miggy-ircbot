@@ -1,8 +1,5 @@
 #!/bin/bash
 
-FILES="sc-irc-bot.pl"
-DIRS="SCIrcBot/ share/"
-
 # This script lives in dev/scripts, so end up in dev/
 cd `dirname $0`/..
 git checkout master || exit $?

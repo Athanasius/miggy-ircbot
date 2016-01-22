@@ -23,7 +23,7 @@ sub new {
 
   # Fire up the SQLite DB, and read in current data
   $rss_db = DBI->connect("dbi:SQLite:dbname=$rss_file","","");
-  my $sth = $rss_db->prepare("SELECT * FROM rsi_commlink");
+  my $sth = $rss_db->prepare("SELECT * FROM rss_items");
   $sth->execute();
   while (my $row = $sth->fetchrow_hashref) {
     $rss_items{${$row}{'guid'}} = $row;
@@ -37,18 +37,18 @@ sub PCI_register {
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
   unless ( $self->{http_alias} ) {
-  $self->{http_alias} = join('-', 'ua-scircbot', $irc->session_id() );
-  $self->{follow_redirects} ||= 2;
-  POE::Component::Client::HTTP->spawn(
-     Alias           => $self->{http_alias},
-     Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
-     Timeout         => 30,
-     FollowRedirects => $self->{follow_redirects},
-  );
+    $self->{http_alias} = join('-', 'ua-scircbot', $irc->session_id() );
+    $self->{follow_redirects} ||= 2;
+    POE::Component::Client::HTTP->spawn(
+      Alias           => $self->{http_alias},
+      Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
+      Timeout         => 30,
+      FollowRedirects => $self->{follow_redirects},
+    );
   }
   $self->{session_id} = POE::Session->create(
   object_states => [
-     $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
+    $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
   ],
   )->ID();
   $poe_kernel->state( 'get_rss_items', $self );
@@ -89,7 +89,7 @@ sub _shutdown {
 # rss_check(): Perform a timed RSS check
 # _get_rss_items(): Actually retrieve current items
 # _parse_rss_items(): Triggered when we receive items back.  Check which ones
-#                 are new and fire them at irc_sc_rss_newitems
+#                 are new and fire them at irc_miggybot_rss_newitems
 ###########################################################################
 sub get_rss_items {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
@@ -131,18 +131,18 @@ sub _parse_rss_items {
         $ct = $result->header('Content-Type');
 #printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type is '%s'\n", $result->header('Content-Type');
       }
-      push(@params, 'irc_sc_rss_error', $args, "Incorrect Content-Type: " . $ct);
+      push(@params, 'irc_miggybot_rss_error', $args, "Incorrect Content-Type: " . $ct);
     } elsif ($result->content !~ /<rss version/) {
-      push(@params, 'irc_sc_rss_error', $args, "No RSS tag/version");
+      push(@params, 'irc_miggybot_rss_error', $args, "No RSS tag/version");
     } else {
       my $str = $result->content;
       my $rss = XML::RSS->new();
       eval { $rss->parse($str); };
       if ($@) {
-        push @params, 'irc_sc_rss_error', $args, $@;
+        push @params, 'irc_miggybot_rss_error', $args, $@;
       } else {
-        my $sth = $rss_db->prepare("INSERT INTO rsi_commlink (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
-        push @params, 'irc_sc_rss_newitems', $args;
+        my $sth = $rss_db->prepare("INSERT INTO rss_items (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+        push @params, 'irc_miggybot_rss_newitems', $args;
         # reverse() should mean we insert latest item as the highest ID in the DB
         foreach my $item (reverse(@{$rss->{'items'}})) {
 #         print "title: $item->{'title'}\n";
@@ -174,7 +174,7 @@ sub _parse_rss_items {
       }
     }
   } else {
-    push @params, 'irc_sc_rss_error', $args, $result->status_line;
+    push @params, 'irc_miggybot_rss_error', $args, $result->status_line;
   }
   $kernel->post( @params );
   undef;
@@ -201,12 +201,12 @@ sub _get_rss_latest {
   my @params;
   push @params, $args{session};
 
-  my $sth = $rss_db->prepare("SELECT * FROM rsi_commlink ORDER BY id DESC LIMIT 1");
+  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 1");
 #printf STDERR "_GET_RSS_LATEST: Executing query\n";
   my $res = $sth->execute();
   while (my $row = $sth->fetchrow_hashref) {
 #printf STDERR "_GET_RSS_LATEST: Got at least one row\n";
-    push @params, 'irc_sc_rss_latest', \%args;
+    push @params, 'irc_miggybot_rss_latest', \%args;
     push @params, $row;
     $kernel->post( @params );
     return;
@@ -214,7 +214,7 @@ sub _get_rss_latest {
   # else
 printf STDERR "_GET_RSS_LATEST: No data?\n";
 
-  push @params, 'irc_sc_rss_error', \%args, "Coudn't retrieve latest RSS item from local database";
+  push @params, 'irc_miggybot_rss_error', \%args, "Coudn't retrieve latest RSS item from local database";
   $kernel->post( @params );
 
   undef;

@@ -1,18 +1,22 @@
-*) Make bot respond to invite, if it's to the config'd channel (in case of flood kick)
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Vital to making bot more generic and easier to configure.
+---------------------------------------------------------
+
+*) Config file for simple "say this" bot commands. FAQ module ?
+*) On the fly reloading of modules.
+*) Per site URL parsing to pull extra information or cope with the blurb we
+   want not being in the <title>
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Left over from ^Lumi^
+---------------------
+
 *) Make Seen.pm notice quits
 *) Make Seen.pm output format better (time ago)
 *) Rate-limit bot commands like !crowdfund (exclude ops?)
-*) Alpha slots watcher
-*) Use stored data to provide funds/alpha rates
-*) Ship stats
-*) Dev Tracker
-  Know how to do this directly now.
-*) Create a Q account for the bot and qauth
-*) Watch for new youtube videos (WMH)
-*) Forward twitch emails about going live to sc@fysh.org and hook up procmail
+*) Watch for new youtube videos
+*) Forward twitch emails about going live and hook up procmail
   to trigger bot announce.
-*) Extra command: !calc - simply calculator
-*) Extra command: !pledgewatch - Link to https://docs.google.com/spreadsheet/ccc?key=0Ariqrruk80VHdHVMREsxRWkwTXg2Rlc3clE0a3RwaXc#gid=4
 *) Parse for imgur URLs, strip the .jpg/png/whatever extension, and load THAT page to look for <title>.
 
 Below here is DONE
@@ -24,3 +28,4 @@ Below here is DONE
 *) Check content-type before parsing URL content
 2) Make URLParse check 'bare' URLs in more detail: ...so  should NOT be counted as a possible URL!
 1) Make sure an alarm triggering doesn't re-set itself for the same second and end up spamming!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
