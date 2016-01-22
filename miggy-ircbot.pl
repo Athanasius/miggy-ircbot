@@ -290,9 +290,9 @@ sub irc_miggybot_url_success {
   my $channel = delete $args->{_channel};
 
 #printf STDERR "irc_miggybot_url_success:\n";
-  if (defined($_[ARG1]) and $args->{quiet} == 0) {
-    my $title = $_[ARG1];
-    $irc->yield('privmsg', $channel, "URL Title: " . $title);
+  if (defined($_[ARG1]) and $_[ARG1] ne "" and $args->{quiet} == 0) {
+    my $blurb = $_[ARG1];
+    $irc->yield('privmsg', $channel, $blurb);
   }
 }
 
