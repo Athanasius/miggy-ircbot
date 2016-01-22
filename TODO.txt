@@ -9,7 +9,6 @@ Vital to making bot more generic and easier to configure.
 Left over from ^Lumi^
 ---------------------
 
-*) Make bot respond to invite, if it's to the config'd channel (in case of flood kick)
 *) Make Seen.pm notice quits
 *) Make Seen.pm output format better (time ago)
 *) Rate-limit bot commands like !crowdfund (exclude ops?)
