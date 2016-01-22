@@ -1,4 +1,4 @@
-package SCIrcBot::ConfigFile;
+package MiggyIRCBot::ConfigFile;
 
 our %config = (
   'nickname' => '^Lumi^',

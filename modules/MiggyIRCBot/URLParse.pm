@@ -1,4 +1,4 @@
-package SCIrcBot::URLParse;
+package MiggyIRCBot::URLParse;
 
 use strict;
 use warnings;

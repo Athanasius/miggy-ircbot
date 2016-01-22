@@ -1,4 +1,4 @@
-package SCIrcBot::AlarmClock;
+package MiggyIRCBot::AlarmClock;
 
 use strict;
 use warnings;
