@@ -17,8 +17,9 @@ my $irc = POE::Component::IRC->spawn();
 
 POE::Session->create(
   package_states => [
-    main => [ qw( _default _start
+    main => [ qw( _default _start irc_001
       irc_miggybot_url_success irc_miggybot_url_error
+
       ) ]
   ],
   inline_states => {
@@ -39,6 +40,19 @@ sub _start {
   );
 
   $kernel->yield('get_url', { _channel => "#test", session => $session, quiet => 0, url => $ARGV[0] } );
+}
+
+sub irc_001 {
+  my ($kernel, $sender) = @_[KERNEL, SENDER];
+  my $irc = $_[SENDER]->get_heap();
+
+  print " irc_001:\n";
+
+  # Set mode +x
+  print " Attempt to set usermode +x\n";
+  $irc->yield('mode', $config->getconf('nickname') . " +x");
+
+  return;
 }
 
 ###########################################################################

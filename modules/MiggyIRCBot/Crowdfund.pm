@@ -24,7 +24,7 @@ sub PCI_register {
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
   unless ( $self->{http_alias} ) {   
-    $self->{http_alias} = join('-', 'ua-scircbot', $irc->session_id() );
+    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
