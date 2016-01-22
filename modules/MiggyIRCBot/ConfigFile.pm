@@ -16,6 +16,8 @@ our %config = (
   'qauth' => '',
   'qpass' => '',
   'youtube_api_key' => '',
+  'imgur_clientid' => '',
+  'imgur_clientsecret' => '',
 );
 
 sub new {
