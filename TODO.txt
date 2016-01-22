@@ -6,6 +6,32 @@ Vital to making bot more generic and easier to configure.
 *) On the fly reloading of modules.
 *) Per site URL parsing to pull extra information or cope with the blurb we
    want not being in the <title>
+    YouTube - DONE - Gaming site?
+    Imgur - DONE
+    Reddit
+    community.elitedangerous.com (galnet)
+    coriolis.io (build name, ship type?)
+    edshipyard.com
+    Twitter
+    Facebook?
+    Twitch.TV
+    gfycat.com
+    imgflip.com
+    dropbox.com
+    slashdot.org
+    picasaweb.google.com
+    www.flickr.com
+    http://www.nasa.gov/multimedia/nasatv/index.html
+    instagram
+    prntscr.com
+    pastebin.com
+    docs.google.com
+    photobucket.com
+
+  And just ignore:
+
+    quickmeme.com (images only)
+    https://www.google.co.uk/search (obvious from URL)
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Left over from ^Lumi^
