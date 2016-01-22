@@ -1,4 +1,5 @@
-This is the code for the ^Lumi^ bot on Quakenet #starcitizen.
+A generic IRC bot, originally for running ^Lumi^ in #starcitizen on
+QuakeNet.  As such some of the older features may seem esoteric.
 
 It has various functions, including:
 
