@@ -11,9 +11,8 @@ use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
 use POE::Component::IRC::Plugin::BotCommand;
 
-use MiggyIRCBot::Crowdfund;
 use MiggyIRCBot::ConfigFile;
-use MiggyIRCBot::RSS;
+#use MiggyIRCBot::RSS;
 use MiggyIRCBot::URLParse;
 use MiggyIRCBot::AlarmClock;
 use POSIX qw/strftime/;
@@ -33,7 +32,6 @@ POE::Session->create(
       irc_public
       irc_ctcp_action
       irc_invite
-      irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error irc_sc_rss_latest
       irc_sc_url_success irc_sc_url_error
       irc_botcmd_alarm irc_sc_alarm_announce
       irc_botcmd_youtube
@@ -42,6 +40,7 @@ POE::Session->create(
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
+#      irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error irc_sc_rss_latest
   inline_states => {
     crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
     rss_check => \&handle_rss_check,
@@ -107,27 +106,19 @@ sub _start {
     )
   );
 
-  $irc->plugin_add('SCRSS',
-    MiggyIRCBot::RSS->new(
-      rss_url => $config->getconf('rss_url'),
-      rss_file => $config->getconf('rss_filestore')
-    )
-  );
+#  $irc->plugin_add('MiggyIRCBotRSS',
+#    MiggyIRCBot::RSS->new(
+#      rss_url => $config->getconf('rss_url'),
+#      rss_file => $config->getconf('rss_filestore')
+#    )
+#  );
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
-  $irc->plugin_add('SCCrowdfund',
-    MiggyIRCBot::Crowdfund->new()
-  );
-  # Get Crowdfund::$last_cf initialised
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 1 } );
-  # And set up the delayed check
-  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
-
-  $irc->plugin_add('SCURLParse',
+  $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new()
   );
 
-  $irc->plugin_add('SCAlarmClock',
+  $irc->plugin_add('MiggyIRCBotAlarmClock',
     MiggyIRCBot::AlarmClock->new()
   );
   $kernel->yield('init_alarms', { session_id => $session });
@@ -329,9 +320,9 @@ sub irc_sc_rss_latest {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
-printf STDERR "_IRC_SC_RSS_LATEST\n";
+printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
   for my $i (@_[ARG1..$#_]) {
-#printf STDERR "_IRC_SC_RSS_LATEST: Spitting out item\n";
+#printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
     $irc->yield('privmsg', $channel, 'Latest RSI Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
 }
