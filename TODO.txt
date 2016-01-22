@@ -4,6 +4,8 @@ Vital to making bot more generic and easier to configure.
 
 *) Config file for simple "say this" bot commands. FAQ module ?
 *) On the fly reloading of modules.
+*) Per site URL parsing to pull extra information or cope with the blurb we
+   want not being in the <title>
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Left over from ^Lumi^
