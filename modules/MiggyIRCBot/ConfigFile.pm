@@ -15,6 +15,7 @@ our %config = (
   'rss_check_time' => 300,
   'qauth' => '',
   'qpass' => '',
+  'youtube_api_key' => '',
 );
 
 sub new {
@@ -64,6 +65,8 @@ sub new {
       $config{'qauth'} = $1;
     } elsif (/^qpass:\s+(.*)$/i) {
       $config{'qpass'} = $1;
+    } elsif (/^youtube_api_key:\s+(.*)$/i) {
+      $config{'youtube_api_key'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }
