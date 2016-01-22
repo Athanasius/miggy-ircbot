@@ -33,17 +33,12 @@ POE::Session->create(
       irc_public
       irc_ctcp_action
       irc_invite
-      irc_botcmd_crowdfund irc_sc_crowdfund_success irc_sc_crowdfund_error
       irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error irc_sc_rss_latest
       irc_sc_url_success irc_sc_url_error
       irc_botcmd_alarm irc_sc_alarm_announce
       irc_botcmd_youtube
       irc_botcmd_twitch
-      irc_botcmd_hangover
-      irc_botcmd_wmh
-      irc_botcmd_atv
-      irc_botcmd_10ftc
-      irc_botcmd_commlink
+      irc_botcmd_community_site
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
@@ -61,36 +56,18 @@ sub _start {
   $irc->plugin_add('BotCommand',
     POE::Component::IRC::Plugin::BotCommand->new(
       Commands => {
-        crowdfund => { 
-          info => 'Takes no arguments, reports current crowdfund data.',
-          aliases => [ 'cf' ],
-        },
         rss => {
           info => 'With no argument checks RSI RSS feed (OPS/VOICE ONLY).  With "latest" as argument it will repeat the latest posted item details (anyone).',
         },
         youtube => {
-          info => "Displays RSI YouTube channel URL"
+          info => "Displays FD YouTube channel URL"
         },
         twitch => {
-          info => "Displays RSI Twitch.TV channel URL"
+          info => "Displays FD Twitch.TV channel URL"
         },
-        hangover => {
-          info => "Displays Wingman's UStream channel URL, where he hosts his post WMH Hangover shows",
-          aliases => [ 'ustream', 'wmho' ],
-        },
-        wmh => {
-          info => "Displays info about WingMan's Hangar, what it was, where to watch archived episodes etc.",
-        },
-        commlink => {
-          info => "Displays the URL for the RSI Comm-Link",
-          aliases => [ 'comm-link', 'latest', 'news' ],
-        },
-        'atv' => {
-          info => "Displays info for About the Verse, what it is, when it's available etc.",
-        },
-        '10ftc' => {
-          info => "Displays info about 10 For the Chairman, what it is, when it's available etc.",
-          aliases => [ 'tftc' ],
+        community_site => {
+          info => "Displays the URL for the ED Community site",
+          aliases => [ 'commsite', 'community' ]
         },
       },
       In_channels => 1,
@@ -400,7 +377,7 @@ sub irc_botcmd_youtube {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Roberts Space Industries YouTube channel is at: http://www.youtube.com/user/RobertsSpaceInd");
+  $irc->yield('privmsg', $channel, "Frontier Developments' YouTube channel is at: https://www.youtube.com/user/FrontierDevelopments");
 }
 # Twitch.TV
 sub irc_botcmd_twitch {
@@ -408,46 +385,14 @@ sub irc_botcmd_twitch {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Roberts Space Industries Twitch.TV channel is at: http://www.twitch.tv/roberts_space_ind_ch_1");
+  $irc->yield('privmsg', $channel, "Frontier Developments' Twitch.TV channel is at: http://www.twitch.tv/frontierdev");
 }
-# Hangover / Ustream
-sub irc_botcmd_hangover {
+sub irc_botcmd_community_site {
   my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Wingman's Hangover was when WingMan streamed on ustream ~15 minutes after the end of Wingman's Hangar.  He might still pop up on there now and then: http://www.ustream.tv/channel/wingmancig");
-}
-# Wingman's Hangar
-sub irc_botcmd_wmh {
-  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $poco = $sender->get_heap();
-
-  $irc->yield('privmsg', $channel, "WingMan's Hangar was a look at CIG/SC news each week.  It aired at 11am US Central time every Wednesday, excepting some holidays and special events, and ran for a total of 72 episodes.  You can watch the archived episodes on YouTube: https://www.youtube.com/playlist?list=PLVct2QDhDrB0sipIorv4skO-XR8bAO7Pp");
-}
-# Around the Verse
-sub irc_botcmd_atv {
-  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $poco = $sender->get_heap();
-
-  $irc->yield('privmsg', $channel, "Around the Verse is a look at CIG/SC news each week.  It airs at mid-day US Pacific time every Thursday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
-}
-# Ten For The Chairman
-sub irc_botcmd_10ftc {
-  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $poco = $sender->get_heap();
-
-  $irc->yield('privmsg', $channel, "10 For the Chairman is a weekly show featuring Chris Roberts answering 10 subscribers' questions.  It airs at 3pm US Pacific time every Monday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
-}
-sub irc_botcmd_commlink {
-  my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $poco = $sender->get_heap();
-
-  $irc->yield('privmsg', $channel, "The latest news from Roberts Space Industries and Cloud Imperium Games about Star Citizen should be on: http://www.robertsspaceindustries.com/comm-link/ (NB: A few posts only go to the front page: http://www.robertsspaceindustries.com/ )");
+  $irc->yield('privmsg', $channel, "The (still beta?) Elite Dangerous Community site can be found at: https://community.elitedangerous.com/");
 }
 ###########################################################################
 

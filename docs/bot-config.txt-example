@@ -1,0 +1,7 @@
+nickname: SomeBot
+channel: #SomeIRCChannel
+console_port: 3337
+crowdfund_funds_check_time: 300
+rss_check_time: 900
+qauth: Some Q Auth
+qpass: Some Q Password
