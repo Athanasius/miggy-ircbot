@@ -12,7 +12,7 @@ use POE::Component::IRC::Plugin::Seen;
 use POE::Component::IRC::Plugin::BotCommand;
 
 use MiggyIRCBot::ConfigFile;
-#use MiggyIRCBot::RSS;
+use MiggyIRCBot::RSS;
 use MiggyIRCBot::URLParse;
 use MiggyIRCBot::AlarmClock;
 use POSIX qw/strftime/;
@@ -32,15 +32,15 @@ POE::Session->create(
       irc_public
       irc_ctcp_action
       irc_invite
-      irc_sc_url_success irc_sc_url_error
-      irc_botcmd_alarm irc_sc_alarm_announce
+      irc_miggybot_url_success irc_miggybot_url_error
+      irc_botcmd_rss irc_miggybot_rss_newitems irc_miggybot_rss_error irc_miggybot_rss_latest
+      irc_botcmd_alarm irc_miggybot_alarm_announce
       irc_botcmd_youtube
       irc_botcmd_twitch
       irc_botcmd_community_site
       irc_console_service irc_console_connect irc_console_authed irc_console_close irc_console_rw_fail
       ) ]
   ],
-#      irc_botcmd_rss irc_sc_rss_newitems irc_sc_rss_error irc_sc_rss_latest
   inline_states => {
     crowdfund_check_threshold => \&handle_crowdfund_check_threshold,
     rss_check => \&handle_rss_check,
@@ -56,7 +56,7 @@ sub _start {
     POE::Component::IRC::Plugin::BotCommand->new(
       Commands => {
         rss => {
-          info => 'With no argument checks RSI RSS feed (OPS/VOICE ONLY).  With "latest" as argument it will repeat the latest posted item details (anyone).',
+          info => "With no argument checks Athanasius' Unofficial Frontier Dev Forum Posts RSS feed (OPS/VOICE ONLY).  With \"latest\" as argument it will repeat the latest posted item details (anyone).",
         },
         youtube => {
           info => "Displays FD YouTube channel URL"
@@ -106,12 +106,12 @@ sub _start {
     )
   );
 
-#  $irc->plugin_add('MiggyIRCBotRSS',
-#    MiggyIRCBot::RSS->new(
-#      rss_url => $config->getconf('rss_url'),
-#      rss_file => $config->getconf('rss_filestore')
-#    )
-#  );
+  $irc->plugin_add('MiggyIRCBotRSS',
+    MiggyIRCBot::RSS->new(
+      rss_url => $config->getconf('rss_url'),
+      rss_file => $config->getconf('rss_filestore')
+    )
+  );
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
   $irc->plugin_add('MiggyIRCBotURLParse',
@@ -207,9 +207,7 @@ sub lookup_url_title {
   my $url;
   if ($msg =~ /(^|[\s,.!\?:]+)(?<url>http[s]{0,1}:\/\/[^\/]+\/[^\s]*)([\s,.!\?:]+|$)/) {
     $url = $+{'url'};
-  } # elsif ($msg =~ /(^|[\s,.!\?:]+)(?<hoststart>[a-zA-Z0-9\.-]+)\.(?<tld>ac|ad|ae|aero|af|ag|ai|al|am|an|ao|aq|ar|arpa|as|asia|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|biz|bj|bl|bm|bn|bo|bq|br|bs|bt|bv|bw|by|bz|ca|cat|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|com|coop|cr|cu|cv|cw|cx|cy|cz|de|dj|dk|dm|do|dz|ec|edu|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gov|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|info|int|io|iq|ir|is|it|je|jm|jo|jobs|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mf|mg|mh|mil|mk|ml|mm|mn|mo|mobi|mp|mq|mr|ms|mt|mu|museum|mv|mw|mx|my|mz|na|name|nc|ne|net|nf|ng|ni|nl|no|np|nr|nu|nz|om|org|pa|pe|pf|pg|ph|pk|pl|pm|pn|post|pr|pro|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tel|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|travel|tt|tv|tw|tz|ua|ug|uk|um|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|xxx|ye|yt|za|zm|zw)([\s,.!\?:]+|$)/) {
-  #  $url = 'http://' . $+{'hoststart'} . "." . $+{'tld'};
-  #}
+  }
   if (defined($url) and $url =~ /(?<url>.*)[\.,\?:!]+$/) {
     $url = $+{'url'};
   }
@@ -220,58 +218,6 @@ printf STDERR "irc_public/action: parsed '\n%s\n' from '\n%s\n', passing to get_
 }
 ###########################################################################
 
-
-###########################################################################
-# Crowdfund related functions
-###########################################################################
-### The in-channel checking of crowdfund
-sub irc_botcmd_crowdfund {
-  my ($kernel, $session, $sender, $channel) = @_[KERNEL, SESSION, SENDER, ARG1];
-  my $nick = (split /!/, $_[ARG0])[0];
-  my $poco = $sender->get_heap();
-
-#  unless ($poco->is_channel_operator($channel, $nick)
-#    or $poco->has_channel_voice($channel, $nick)) {
-#    return;
-#  }
-  $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
-  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 0, quiet => 0 } );
-}
-
-### Function to check current/last crowdfund against thresholds
-sub handle_crowdfund_check_threshold {
-  my ($kernel, $session) = @_[KERNEL, SESSION];
-
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 0 } );
-
-  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
-}
-
-sub irc_sc_crowdfund_success {
-  my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
-  my $channel = delete $args->{_channel};
-
-#printf STDERR "irc_sc_crowdfund_success:\n";
-#printf STDERR " quiet: %s\n", Dumper($args->{quiet});
-#printf STDERR " ARG1: %s\n", Dumper($_[ARG1]);
-  if (defined($_[ARG1]) and $args->{quiet} == 0) {
-    my $crowd = $_[ARG1];
-    if (defined(${$crowd}{'error'})) {
-      $irc->yield('privmsg', $channel, ${$crowd}{'error'});
-    } elsif (defined(${$crowd}{'report'})) {
-      $irc->yield('privmsg', $channel, ${$crowd}{'report'});
-    }
-  }
-}
-
-sub irc_sc_crowdfund_error {
-  my ($kernel, $sender, $args, $new_cf) = @_[KERNEL, SENDER, ARG0, ARG1];
-  my $channel = delete $args->{_channel};
-
-mylog("irc_sc_crowdfund_error...");
-  $irc->yield('privmsg', $channel, "Crowdfund Error: " . ${$new_cf}{'error'});
-}
-###########################################################################
 
 ###########################################################################
 # RSS Checking
@@ -303,35 +249,35 @@ sub irc_botcmd_rss {
   }
 }
 
-sub irc_sc_rss_newitems {
+sub irc_miggybot_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
   if (defined($_[ARG1])) {
     for my $i (@_[ARG1..$#_]) {
-      $irc->yield('privmsg', $channel, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
+      $irc->yield('privmsg', $channel, 'New from RSS: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
     }
   } elsif (! $args->{quiet}) {
-      $irc->yield('privmsg', $channel, 'No new Comm-links at this time');
+      $irc->yield('privmsg', $channel, 'No new RSS items at this time');
   }
 }
 
-sub irc_sc_rss_latest {
+sub irc_miggybot_rss_latest {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $channel = delete $args->{_channel};
 
 printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
   for my $i (@_[ARG1..$#_]) {
 #printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
-    $irc->yield('privmsg', $channel, 'Latest RSI Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'guid'});
+    $irc->yield('privmsg', $channel, 'Latest RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
 }
 
-sub irc_sc_rss_error {
+sub irc_miggybot_rss_error {
   my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
   my $channel = delete $args->{_channel};
 
-mylog("irc_sc_rss_error...");
+mylog("irc_miggybot_rss_error...");
   $irc->yield('privmsg', $channel, "RSS Error: " . $error);
 }
 ###########################################################################
@@ -339,22 +285,22 @@ mylog("irc_sc_rss_error...");
 ###########################################################################
 # URL Parsing
 ###########################################################################
-sub irc_sc_url_success {
+sub irc_miggybot_url_success {
   my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
   my $channel = delete $args->{_channel};
 
-#printf STDERR "irc_sc_url_success:\n";
+#printf STDERR "irc_miggybot_url_success:\n";
   if (defined($_[ARG1]) and $args->{quiet} == 0) {
     my $title = $_[ARG1];
     $irc->yield('privmsg', $channel, "URL Title: " . $title);
   }
 }
 
-sub irc_sc_url_error {
+sub irc_miggybot_url_error {
   my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
   my $channel = delete $args->{_channel};
 
-mylog("irc_sc_url_error...");
+mylog("irc_miggybot_url_error...");
   $irc->yield('privmsg', $channel, $error);
 }
 ###########################################################################
@@ -403,11 +349,11 @@ sub irc_botcmd_alarm {
   $irc->yield('privmsg', $channel, "Alarm test command");
 }
 
-sub irc_sc_alarm_announce {
+sub irc_miggybot_alarm_announce {
   my ($kernel, $sender, $alarmtag, $alarm, $pre) = @_[KERNEL, SENDER, ARG0, ARG1, ARG2];
   my $channel = $config->getconf('channel');
 
-  #printf STDERR "irc_sc_alarm_announce: alarm = %s\n", Dumper($alarm);
+  #printf STDERR "irc_miggybot_alarm_announce: alarm = %s\n", Dumper($alarm);
   if (defined($pre)) {
     $irc->yield('privmsg', $channel, sprintf(${$alarm}{'pre_announce_text'}, hours_minutes_text($pre)));
   } else {
