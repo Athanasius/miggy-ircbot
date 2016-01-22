@@ -1,3 +1,5 @@
+ircserver: some.irc.server
+ircport: 6667
 nickname: SomeBot
 channel: #SomeIRCChannel
 console_port: 3337
