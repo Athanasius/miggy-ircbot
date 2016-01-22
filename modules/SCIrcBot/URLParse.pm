@@ -3,11 +3,16 @@ package SCIrcBot::URLParse;
 use strict;
 use warnings;
 use POSIX;
+use Data::Dumper;
 use POE;
 use POE::Component::Client::HTTP;
 use POE::Component::IRC::Plugin qw(:ALL);
 use HTTP::Request;
 use HTML::TreeBuilder;
+
+my %sites = (
+  'imgur\.com$' => \&parse_imgur_com
+);
 
 sub new {
   my ($class, %args) = @_;
@@ -107,19 +112,41 @@ sub _parse_url {
     push @params, 'irc_sc_url_error', $args, $error;
   } else {
 #printf STDERR "_PARSE_URL: res == success\n";
-    if ($res->header('Content-Type') =~ /^text\/(ht|x)ml/) {
-      my $tree = HTML::TreeBuilder->new;
-      $tree->parse($res->decoded_content);
-      $tree->eof();
-      my $title = $tree->look_down('_tag', 'title');
-      if ($title) {
-        push @params, 'irc_sc_url_success', $args, $title->as_text;
-      } else {
-        push @params, 'irc_sc_url_error', $args, "No <title> found in URL content";
+    # Check if it's a site we have a special handler for
+printf STDERR "_PARSE_URL: args->{url} = '%s'\n", $args->{'url'};
+    my ($host) = $args->{'url'} =~ /^http[s]?:\/\/([^\/:]+)(:[0-9]+)?\//;
+    my $done;
+    foreach my $site (keys(%sites)) {
+      if ($host =~ $site) {
+printf STDERR "_PARSE_URL: Recgonised a %s site...\n", $site;
+        my $blurb = $sites{$site}->($res, $args);
+        if (defined($blurb)) {
+          push @params, 'irc_miggybot_url_success', $args, $blurb;
+        } else {
+          push @params, 'irc_miggybot_url_error', $args, "'$args->{'url'} confused me!";
+        }
+        $done = 1;
+        last;
       }
-    } else {
-      $args->{'quiet'} = 1;
-      push @params, 'irc_sc_url_success', $args, "That was not an HTML page";
+    }
+
+    if (!defined($done)) {
+      # Use generic parsing
+      if ($res->header('Content-Type') =~ /^text\/(ht|x)ml/) {
+        my $tree = HTML::TreeBuilder->new;
+        $tree->parse($res->decoded_content);
+        $tree->eof();
+        my $title = $tree->look_down('_tag', 'title');
+        if ($title) {
+          push @params, 'irc_miggybot_url_success', $args, "[ " . $title->as_text . " ] - " . $host;
+        } else {
+          push @params, 'irc_miggybot_url_error', $args, "No <title> found in URL content";
+        }
+      # } elsif (image) {
+      } else {
+        $args->{'quiet'} = 1;
+        push @params, 'irc_miggybot_url_success', $args, "That was not an HTML page";
+      }
     }
   }
 
@@ -128,4 +155,11 @@ sub _parse_url {
   undef;
 }
 
+sub parse_imgur_com {
+  my ($res, $args) = @_;
+
+# imgur.com is a PITA, fills in <title> etc after the fact with javascript
+# waste of time to respond with the generic page title
+  return "";
+}
 1;
