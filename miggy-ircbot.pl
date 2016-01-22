@@ -131,7 +131,9 @@ sub _start {
 
   $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
-      youtube_api_key => $config->getconf('youtube_api_key')
+      youtube_api_key => $config->getconf('youtube_api_key'),
+      imgur_clientid => $config->getconf('imgur_clientid'),
+      imgur_clientsecret => $config->getconf('imgur_clientsecret')
     )
   );
 

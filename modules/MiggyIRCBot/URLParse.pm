@@ -13,10 +13,12 @@ use JSON;
 use Date::Parse;
 
 my $youtube_api_key;
+my ($imgur_clientid, $imgur_clientsecret);
 my %sites = (
-  'imgur\.com$' => {get => \&get_generic, parse => \&parse_imgur_com},
   '^http(s)?:\/\/www\.youtube\.com\/watch\?v=' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
-   '^http(s)?:\/\/www\.youtube\.com\/user\/.+\/live' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
+  '^http(s)?:\/\/www\.youtube\.com\/user\/.+\/live' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
+  '^http(s)?:\/\/(i\.)?imgur\.com\/([^\.\/]+)(\..+)?$' => {get => \&get_imgur_image, parse => \&parse_imgur_image},
+  '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
 );
 
 sub new {
@@ -24,6 +26,7 @@ sub new {
 	my $self = bless {}, $class;
 
   $youtube_api_key = $args{'youtube_api_key'};
+  ($imgur_clientid, $imgur_clientsecret) = ($args{'imgur_clientid'}, $args{'imgur_clientsecret'});
 
 	return $self;
 }
@@ -33,7 +36,7 @@ sub PCI_register {
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
   unless ( $self->{http_alias} ) {   
-    $self->{http_alias} = join('-', 'ua-scircbot', $irc->session_id() );
+    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
@@ -44,7 +47,7 @@ sub PCI_register {
   }
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api ) ],
+      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album ) ],
     ],
   )->ID();
   $poe_kernel->state( 'get_url', $self );
@@ -76,7 +79,7 @@ sub _shutdown {
 
 sub get_url {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-#printf STDERR "GET_URL\n";
+printf STDERR "GET_URL\n";
   $kernel->post( $self->{session_id}, '_get_url', @_[ARG0..$#_] );
   undef;
 }
@@ -338,6 +341,173 @@ sub youtube_parse_duration {
 }
 ###########################################################################
 
+###########################################################################
+# IMGUR URL Parsing
+###########################################################################
+sub get_imgur_image {
+  my ($kernel, $self, $args) = @_;
+
+  my (undef, undef, $image_id) = $args->{'url'} =~ /^http(s)?:\/\/(i\.)?imgur\.com\/([^\.]+)(\..+)?$/;
+#printf STDERR "GET_IMGUR_IMAGE: image_id = %s\n", $image_id;
+  if ($imgur_clientid and $image_id) {
+printf STDERR "GET_IMGUR_IMAGE, using API for '%s' (%s)\n", $args->{'url'}, $image_id;
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid]);
+#printf STDERR "GET_IMGUR_IMAGE: req is:\n%s\n", $req->as_string();
+    $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_image', $req, $args );
+  } else {
+printf STDERR "GET_IMGUR_IMAGE, NOT just using scraping for '%s', no output\n", $args->{'url'};
+  }
+}
+
+sub parse_imgur_image {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+#printf STDERR "PARSE_IMGUR_IMAGE\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_IMGUR_IMAGE: res != success: $res->status_line\n";
+printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+#printf STDERR "PARSE_IMGUR_IMAGE: Content: '%s'\n", $res->content;
+    my $json = decode_json($res->content);
+    if (!defined($json)) {
+#printf STDERR "PARSE_IMGUR_IMAGE: No JSON?\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+#printf STDERR "PARSE_IMGUR_IMAGE: Got JSON?\n";
+      if (!defined($json->{'success'}) or $json->{'success'} ne 'true') {
+#printf STDERR "PARSE_IMGUR_IMAGE: No success, or it's not true?\n";
+        push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'data'}{'error'};
+      } elsif (defined($json->{'data'})) {
+#printf STDERR "PARSE_IMGUR_IMAGE: success == true\n";
+        my $d = $json->{'data'};
+        my $blurb = "[ Imgur Image ] - ";
+        if (defined($d->{'title'})) {
+          $blurb .= "Title: " . $d->{'title'};
+        } else {
+          $blurb .= "<no title>";
+        }
+        if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
+          $blurb .= " | *NSFW* ";
+        }
+        if (defined($d->{'animated'}) and $d->{'animated'} eq 'true') {
+          $blurb .= " | *ANIMATED* ";
+        }
+        if (defined($d->{'size'})) {
+          $blurb .= " | Size: " . prettyprint($d->{'size'});
+        }
+        $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
+        $blurb .= " | Views: " . $d->{'views'};
+        if (defined($d->{'section'})) {
+          $blurb .= " | Section: " . $d->{'section'};
+        }
+#printf STDERR "PARSE_IMGUR_IMAGE: pushing blurb\n";
+        push @params, 'irc_miggybot_url_success', $args, $blurb;
+      }
+    }
+  }
+
+#printf STDERR "PARSE_IMGUR_IMAGE: \@params = %s\n", Dumper(\@params);
+  $kernel->post(@params);
+  undef;
+}
+
+## Albums
+sub get_imgur_album {
+  my ($kernel, $self, $args) = @_;
+
+  my (undef, $album_id) = $args->{'url'} =~ /^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$/;
+printf STDERR "GET_IMGUR_ALBUM: album_id = %s\n", $album_id;
+  if ($imgur_clientid and $album_id) {
+printf STDERR "GET_IMGUR_ALBUM, using API for '%s' (%s)\n", $args->{'url'}, $album_id;
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid]);
+#printf STDERR "GET_IMGUR_ALBUM: req is:\n%s\n", $req->as_string();
+    $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_album', $req, $args );
+  } else {
+printf STDERR "GET_IMGUR_ALBUM, NOT just using scraping for '%s', no output\n", $args->{'url'};
+  }
+}
+
+sub parse_imgur_album {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+printf STDERR "PARSE_IMGUR_ALBUM\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_IMGUR_ALBUM: res != success: $res->status_line\n";
+printf STDERR "PARSE_IMGUR_ALBUM: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+printf STDERR "PARSE_IMGUR_ALBUM: Content: '%s'\n", $res->content;
+    my $json = decode_json($res->content);
+    if (!defined($json)) {
+#printf STDERR "PARSE_IMGUR_ALBUM: No JSON?\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+#printf STDERR "PARSE_IMGUR_ALBUM: Got JSON?\n";
+      if (!defined($json->{'success'}) or $json->{'success'} ne 'true') {
+#printf STDERR "PARSE_IMGUR_ALBUM: No success, or it's not true?\n";
+        push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'data'}{'error'};
+      } elsif (defined($json->{'data'})) {
+#printf STDERR "PARSE_IMGUR_ALBUM: success == true\n";
+        my $d = $json->{'data'};
+        my $blurb = "[ Imgur Album ] - ";
+        if (defined($d->{'title'})) {
+          $blurb .= "Title: " . $d->{'title'};
+        } else {
+          $blurb .= "<no title>";
+        }
+        if (defined($d->{'account_url'}) and $d->{'account_url'} ne 'null') {
+          $blurb .= " | User: " . $d->{'account_url'};
+        }
+        if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
+          $blurb .= " | *NSFW* ";
+        }
+        if (defined($d->{'images_count'})) {
+          $blurb .= " | # Images: " . prettyprint($d->{'images_count'});
+        }
+        $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
+        $blurb .= " | Views: " . $d->{'views'};
+        if (defined($d->{'section'})) {
+          $blurb .= " | Section: " . $d->{'section'};
+        }
+#printf STDERR "PARSE_IMGUR_ALBUM: pushing blurb\n";
+        push @params, 'irc_miggybot_url_success', $args, $blurb;
+      }
+    }
+  }
+
+#printf STDERR "PARSE_IMGUR_ALBUM: \@params = %s\n", Dumper(\@params);
+  $kernel->post(@params);
+  undef;
+}
+
+###########################################################################
+
+###########################################################################
+# Misc helper subs
+###########################################################################
 sub prettyprint {
   my $number = sprintf "%.0f", shift @_;
   # Add one comma each time through the do-nothing loop
@@ -346,5 +516,6 @@ sub prettyprint {
   #$number =~ s/^(-?)/$1\$/;
   $number;
 }
+###########################################################################
 
 1;
