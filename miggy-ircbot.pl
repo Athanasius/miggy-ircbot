@@ -115,7 +115,9 @@ sub _start {
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
   $irc->plugin_add('MiggyIRCBotURLParse',
-    MiggyIRCBot::URLParse->new()
+    MiggyIRCBot::URLParse->new(
+      youtube_api_key => $config->getconf('youtube_api_key')
+    )
   );
 
   $irc->plugin_add('MiggyIRCBotAlarmClock',

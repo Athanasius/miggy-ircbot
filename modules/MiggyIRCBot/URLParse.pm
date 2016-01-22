@@ -9,15 +9,21 @@ use POE::Component::Client::HTTP;
 use POE::Component::IRC::Plugin qw(:ALL);
 use HTTP::Request;
 use HTML::TreeBuilder;
+use JSON;
+use Date::Parse;
 
+my $youtube_api_key;
 my %sites = (
   'imgur\.com$' => {get => \&get_generic, parse => \&parse_imgur_com},
-  '^www\.youtube\.com$' => {get => \&get_youtube_com, parse => \&parse_youtube_com}
+  '^http(s)?:\/\/www\.youtube\.com\/watch\?v=' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
+   '^http(s)?:\/\/www\.youtube\.com\/user\/.+\/live' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
 );
 
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
+
+  $youtube_api_key = $args{'youtube_api_key'};
 
 	return $self;
 }
@@ -38,7 +44,7 @@ sub PCI_register {
   }
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start _get_url get_generic _parse_url ) ],
+      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api ) ],
     ],
   )->ID();
   $poe_kernel->state( 'get_url', $self );
@@ -87,13 +93,11 @@ printf STDERR "_GET_URL\n";
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
 printf STDERR "_GET_URL: URL '%s'\n", $args{'url'};
-  my ($host) = $args{'url'} =~ /^http[s]?:\/\/([^\/:]+)(:[0-9]+)?\//;
-printf STDERR "_GET_URL: Host '%s'\n", $host;
   my $done;
   foreach my $site (keys(%sites)) {
 printf STDERR "_GET_URL: Checking site '%s'\n", $site;
-    if ($host =~ $site) {
-printf STDERR "_GET_URL: Recognised a %s site...\n"; #\t%s\n", $site, Dumper(${sites}{$site});
+    if ($args{'url'} =~ $site) {
+printf STDERR "_GET_URL: Recognised a %s site...\n", $site; #\t%s\n", $site, Dumper(${sites}{$site});
       $sites{$site}->{'get'}->($kernel, $self, \%args);
       $done = 1;
       last;
@@ -149,7 +153,7 @@ printf STDERR "_PARSE_URL: args->{url} = '%s'\n", $args->{'url'};
     my ($host) = $args->{'url'} =~ /^http[s]?:\/\/([^\/:]+)(:[0-9]+)?\//;
     my $done;
     foreach my $site (keys(%sites)) {
-      if ($host =~ $site) {
+      if ($args->{'url'} =~ $site) {
 printf STDERR "_PARSE_URL: Recognised a %s site...\n", $site;
         my $blurb = $sites{$site}->{'parse'}($res, $args);
         if (defined($blurb)) {
@@ -197,13 +201,75 @@ sub parse_imgur_com {
   return "";
 }
 
+###########################################################################
+# www.youtube.com parsing for video URLs
+###########################################################################
 sub get_youtube_com {
   my ($kernel, $self, $args) = @_;
 
-#printf STDERR "\t%s\n", Dumper($kernel);
-  $kernel->post( $self->{session_id}, 'get_generic', $args );
+  my (undef, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.youtube\.com\/watch\?v=([^\?&]+)/;
+#printf STDERR "GET_YOUTUBE_COM: video_id = %s\n", $video_id;
+  if ($youtube_api_key and $video_id) {
+printf STDERR "GET_YOUTUBE_COM, using API for '%s'\n", $args->{'url'};
+    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key);
+    $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api', $req, $args );
+  } else {
+printf STDERR "GET_YOUTUBE_COM, using scraping for '%s'\n", $args->{'url'};
+    # If not a specific video
+    my $req = HTTP::Request->new('GET', $args->{'url'});
+    $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, $args );
+  }
 }
 
+sub parse_youtube_api {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+#printf STDERR "PARSE_YOUTUBE_API\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_YOUTUBE_API: res != success: $res->status_line\n";
+printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+    my $json = decode_json($res->content);
+    if (! $json) {
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+      if (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+        my $v = $json->{'items'}[0];
+# 21:02:28<EDBot> [YouTube] Title: The Good, The Bad and The Bucky: Highlights from the Buckyball Run | Uploader: Esvandiary | Uploaded: 2015-05-15 00:47:44 UTC | Duration: 00:07:13 | Views: 1,591 | Comments: 7 | Likes: 39 | Dislikes: 1
+        my $blurb = "[ YouTube ] Title: " . $v->{'snippet'}{'title'};
+        $blurb .= " | Uploader: " . $v->{'snippet'}{'channelTitle'};
+        my $pub_timet = str2time($v->{'snippet'}{'publishedAt'});
+        if (defined($pub_timet)) {
+          $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
+        }
+        $blurb .= " | Duration: " . youtube_parse_duration($v->{'contentDetails'}{'duration'});
+        $blurb .= " | Views: " . prettyprint($v->{'statistics'}{'viewCount'});
+        $blurb .= " | Comments: " . prettyprint($v->{'statistics'}{'commentCount'});
+        $blurb .= " | Likes: " . prettyprint($v->{'statistics'}{'likeCount'});
+        $blurb .= " | Dislikes: " . prettyprint($v->{'statistics'}{'dislikeCount'});
+        push @params, 'irc_miggybot_url_success', $args, $blurb;
+      }
+    }
+  }
+
+  $kernel->post(@params);
+  undef;
+}
+
+## Fallback parser in case we don't have a YouTube API key, or it's just
+## not a URL for a specific video
 # 21:02:28<EDBot> [YouTube] Title: The Good, The Bad and The Bucky: Highlights from the Buckyball Run | Uploader: Esvandiary | Uploaded: 2015-05-15 00:47:44 UTC | Duration: 00:07:13 | Views: 1,591 | Comments: 7 | Likes: 39 | Dislikes: 1
 sub parse_youtube_com {
   my ($res, $args) = @_;
@@ -234,15 +300,7 @@ sub parse_youtube_com {
 
     my $duration = $tree->look_down('_tag' => 'meta', 'itemprop' => 'duration');
     if ($duration) {
-      my $d = $duration->attr('content');
-      my ($min, $sec, $hour) = $d =~ /^PT([0-9]+)M([0-9]+)S$/;
-      if ($min >= 60) {
-        $hour = int($min / 60);
-        $min -= $hour * 60;
-      } else {
-        $hour = 0;
-      }
-      $blurb .= sprintf " | Duration: %02d:%02d:%02d", $hour, $min, $sec;
+      $blurb .= youtube_parse_duration($duration->attr('content'));
     }
 
     my $interactionCount = $tree->look_down('_tag' => 'meta', 'itemprop' => 'interactionCount');
@@ -262,6 +320,20 @@ sub parse_youtube_com {
   }
   return undef;
 }
+
+sub youtube_parse_duration {
+  my $d = shift;
+
+  my ($min, $sec, $hour) = $d =~ /^PT([0-9]+)M([0-9]+)S$/;
+  if ($min >= 60) {
+    $hour = int($min / 60);
+    $min -= $hour * 60;
+  } else {
+    $hour = 0;
+  }
+  return sprintf " | Duration: %02d:%02d:%02d", $hour, $min, $sec;
+}
+###########################################################################
 
 sub prettyprint {
   my $number = sprintf "%.0f", shift @_;
