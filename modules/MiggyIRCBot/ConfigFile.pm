@@ -67,6 +67,10 @@ sub new {
       $config{'qpass'} = $1;
     } elsif (/^youtube_api_key:\s+(.*)$/i) {
       $config{'youtube_api_key'} = $1;
+    } elsif (/^imgur_clientid:\s+(.*)$/i) {
+      $config{'imgur_clientid'} = $1;
+    } elsif (/^imgur_clientsecret:\s+(.*)$/i) {
+      $config{'imgur_clientsecret'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }

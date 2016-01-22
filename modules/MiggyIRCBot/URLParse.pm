@@ -13,6 +13,7 @@ use JSON;
 use Date::Parse;
 
 my $youtube_api_key;
+my ($imgur_clientid, $imgur_clientsecret);
 my %sites = (
   'imgur\.com$' => {get => \&get_generic, parse => \&parse_imgur_com},
   '^http(s)?:\/\/www\.youtube\.com\/watch\?v=' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
@@ -24,6 +25,7 @@ sub new {
 	my $self = bless {}, $class;
 
   $youtube_api_key = $args{'youtube_api_key'};
+  ($imgur_clientid, $imgur_clientsecret) = ($args{'imgur_clientid'}, $args{'imgur_clientsecret'});
 
 	return $self;
 }
