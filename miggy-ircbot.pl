@@ -11,15 +11,15 @@ use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
 use POE::Component::IRC::Plugin::BotCommand;
 
-use SCIrcBot::Crowdfund;
-use SCIrcBot::ConfigFile;
-use SCIrcBot::RSS;
-use SCIrcBot::URLParse;
-use SCIrcBot::AlarmClock;
+use MiggyIRCBot::Crowdfund;
+use MiggyIRCBot::ConfigFile;
+use MiggyIRCBot::RSS;
+use MiggyIRCBot::URLParse;
+use MiggyIRCBot::AlarmClock;
 use POSIX qw/strftime/;
 use Data::Dumper;
 
-my $config = SCIrcBot::ConfigFile->new(file => "bot-config.txt");
+my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
   die "No config!";
 }
@@ -131,7 +131,7 @@ sub _start {
   );
 
   $irc->plugin_add('SCRSS',
-    SCIrcBot::RSS->new(
+    MiggyIRCBot::RSS->new(
       rss_url => $config->getconf('rss_url'),
       rss_file => $config->getconf('rss_filestore')
     )
@@ -139,7 +139,7 @@ sub _start {
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
   $irc->plugin_add('SCCrowdfund',
-    SCIrcBot::Crowdfund->new()
+    MiggyIRCBot::Crowdfund->new()
   );
   # Get Crowdfund::$last_cf initialised
   $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 1 } );
@@ -147,11 +147,11 @@ sub _start {
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 
   $irc->plugin_add('SCURLParse',
-    SCIrcBot::URLParse->new()
+    MiggyIRCBot::URLParse->new()
   );
 
   $irc->plugin_add('SCAlarmClock',
-    SCIrcBot::AlarmClock->new()
+    MiggyIRCBot::AlarmClock->new()
   );
   $kernel->yield('init_alarms', { session_id => $session });
 

@@ -1,4 +1,4 @@
-package SCIrcBot::RSS;
+package MiggyIRCBot::RSS;
 
 use strict;
 use warnings;

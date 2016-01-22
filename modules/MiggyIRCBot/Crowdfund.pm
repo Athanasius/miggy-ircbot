@@ -1,4 +1,4 @@
-package SCIrcBot::Crowdfund;
+package MiggyIRCBot::Crowdfund;
 
 use strict;
 use warnings;
