@@ -449,7 +449,7 @@ sub irc_botcmd_10ftc {
   $irc->yield('privmsg', $channel, "10 For the Chairman is a weekly show featuring Chris Roberts answering 10 subscribers' questions.  It airs at 3pm US Pacific time every Monday, excepting some holidays and special events.  You can watch it on the RSI YouTube channel (uploaded, not live): https://www.youtube.com/user/RobertsSpaceInd");
 }
 
-+sub irc_botcmd_commlink {
+sub irc_botcmd_commlink {
   my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
