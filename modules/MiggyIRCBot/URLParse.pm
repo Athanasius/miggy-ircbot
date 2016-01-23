@@ -244,11 +244,15 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
     }
     push @params, 'irc_miggybot_url_error', $args, $error;
   } else {
+#printf STDERR "PARSE_YOUTUBE_API success!\n";
     my $json = decode_json($res->content);
     if (! $json) {
+#printf STDERR "PARSE_YOUTUBE_API no JSON\n";
       push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
     } else {
+#printf STDERR "PARSE_YOUTUBE_API got JSON\n";
       if (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+#printf STDERR "PARSE_YOUTUBE_API got items and it contains id\n";
         my $v = $json->{'items'}[0];
 # 21:02:28<EDBot> [YouTube] Title: The Good, The Bad and The Bucky: Highlights from the Buckyball Run | Uploader: Esvandiary | Uploaded: 2015-05-15 00:47:44 UTC | Duration: 00:07:13 | Views: 1,591 | Comments: 7 | Likes: 39 | Dislikes: 1
         my $blurb = "[ YouTube ] Title: " . $v->{'snippet'}{'title'};
@@ -257,12 +261,26 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         if (defined($pub_timet)) {
           $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
         }
-        $blurb .= youtube_parse_duration($v->{'contentDetails'}{'duration'});
-        $blurb .= " | Views: " . prettyprint($v->{'statistics'}{'viewCount'});
-        $blurb .= " | Comments: " . prettyprint($v->{'statistics'}{'commentCount'});
-        $blurb .= " | Likes: " . prettyprint($v->{'statistics'}{'likeCount'});
-        $blurb .= " | Dislikes: " . prettyprint($v->{'statistics'}{'dislikeCount'});
+        if (defined($v->{'contentDetails'}{'duration'})) {
+          $blurb .= youtube_parse_duration($v->{'contentDetails'}{'duration'});
+        }
+        if (defined($v->{'statistics'}{'viewCount'})) {
+          $blurb .= " | Views: " . prettyprint($v->{'statistics'}{'viewCount'});
+        }
+        if (defined($v->{'statistics'}{'commentCount'})) {
+          $blurb .= " | Comments: " . prettyprint($v->{'statistics'}{'commentCount'});
+        }
+        if (defined($v->{'statistics'}{'likeCount'})) {
+          $blurb .= " | Likes: " . prettyprint($v->{'statistics'}{'likeCount'});
+        }
+        if (defined($v->{'statistics'}{'dislikeCount'})) {
+          $blurb .= " | Dislikes: " . prettyprint($v->{'statistics'}{'dislikeCount'});
+        }
+#printf STDERR "PARSE_YOUTUBE_API pushing blurb to params\n";
         push @params, 'irc_miggybot_url_success', $args, $blurb;
+      } else {
+#printf STDERR "PARSE_YOUTUBE_API no items?\n";
+        push @params, 'irc_miggybot_url_error', $args, "No items? Content '" . $res->content . "'";
       }
     }
   }
@@ -302,9 +320,7 @@ sub parse_youtube_com {
     }
 
     my $duration = $tree->look_down('_tag' => 'meta', 'itemprop' => 'duration');
-    if ($duration) {
-      $blurb .= youtube_parse_duration($duration->attr('content'));
-    }
+    $blurb .= youtube_parse_duration($duration->attr('content'));
 
     my $interactionCount = $tree->look_down('_tag' => 'meta', 'itemprop' => 'interactionCount');
     if ($interactionCount) {
@@ -327,11 +343,17 @@ sub parse_youtube_com {
 sub youtube_parse_duration {
   my $d = shift;
 
-  my ($min, $sec, $hour) = $d =~ /^PT([0-9]+)M([0-9]+)S$/;
+  # PT2H7M20S
+  my ($hstring, $hour, $min, $sec) = $d =~ /^PT(([0-9]+)H)?([0-9]+)M([0-9]+)S$/;
+#printf STDERR "youtube_parse_duration: Duration '%s' %s %s %s %s\n", $d, $hstring, $hour, $min, $sec;
+  if (!defined($min)) {
+printf STDERR "Can't find minute in Duration '%s' %s, %s, %s, %s\n", $d, $hstring, $hour, $min, $sec;
+    return "";
+  }
   if ($min >= 60) {
     $hour = int($min / 60);
     $min -= $hour * 60;
-  } else {
+  } elsif (!defined($hour)) {
     $hour = 0;
   }
   return sprintf " | Duration: %02d:%02d:%02d", $hour, $min, $sec;
