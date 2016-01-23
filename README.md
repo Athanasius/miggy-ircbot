@@ -18,7 +18,6 @@ root directory.  Edit to suit.
 
 2. If you're using the RSS module then you'll need to run this command
 to initialise the SQLite database it uses:
-
 ```sqlite3 -echo rss.db < docs/rss-sqlite-schema.db```
 
 3. For YouTube and Imgur URL parsing to work you'll need API keys from them
