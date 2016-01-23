@@ -33,6 +33,8 @@ Vital to making bot more generic and easier to configure.
     quickmeme.com (images only)
     https://www.google.co.uk/search (obvious from URL)
 
+*) If we have Q Auth details then delay channel join until after auth (or some timer?).
+
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Left over from ^Lumi^
 ---------------------
