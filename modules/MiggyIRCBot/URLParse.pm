@@ -257,7 +257,7 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         if (defined($pub_timet)) {
           $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
         }
-        $blurb .= " | Duration: " . youtube_parse_duration($v->{'contentDetails'}{'duration'});
+        $blurb .= youtube_parse_duration($v->{'contentDetails'}{'duration'});
         $blurb .= " | Views: " . prettyprint($v->{'statistics'}{'viewCount'});
         $blurb .= " | Comments: " . prettyprint($v->{'statistics'}{'commentCount'});
         $blurb .= " | Likes: " . prettyprint($v->{'statistics'}{'likeCount'});
