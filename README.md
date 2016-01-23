@@ -20,3 +20,7 @@ root directory.  Edit to suit.
 to initialise the SQLite database it uses:
 
 ```sqlite3 -echo rss.db < docs/rss-sqlite-schema.db
+
+3. For YouTube and Imgur URL parsing to work you'll need API keys from them
+   placed into bot-config.txt, docs/bot-config.txt-example contains
+   currently valid URLs for the documentation about these.
