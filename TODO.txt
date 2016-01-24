@@ -2,6 +2,7 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
+*) RSS on Community Site occasionally throws up old articles in tt-rss, beware!
 *) Config file for simple "say this" bot commands. FAQ module ?
 *) On the fly reloading of modules.
 *) Per site URL parsing to pull extra information or cope with the blurb we
@@ -10,6 +11,7 @@ Vital to making bot more generic and easier to configure.
     Imgur - DONE
     Reddit
     community.elitedangerous.com (galnet)
+    https://support.frontier.co.uk/kb/faq.php?id=185
     coriolis.io (build name, ship type?)
     edshipyard.com
     Twitter
