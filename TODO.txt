@@ -10,7 +10,7 @@ Vital to making bot more generic and easier to configure.
     YouTube - DONE - Gaming site?
     Imgur - DONE
     Reddit
-    community.elitedangerous.com (galnet)
+    community.elitedangerous.com (galnet) - DONE
     https://support.frontier.co.uk/kb/faq.php?id=185
     coriolis.io (build name, ship type?)
     edshipyard.com
@@ -47,7 +47,6 @@ Left over from ^Lumi^
 *) Watch for new youtube videos
 *) Forward twitch emails about going live and hook up procmail
   to trigger bot announce.
-*) Parse for imgur URLs, strip the .jpg/png/whatever extension, and load THAT page to look for <title>.
 
 Below here is DONE
 *) Extra command: !youtube - Show rsi channel URL
