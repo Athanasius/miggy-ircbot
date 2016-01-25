@@ -1,0 +1,23 @@
+Weird select with keep-alive servers.
+
+This was observed against
+
+<https://community.elitedangerous.com/galnet/uid/56a60d089657ba197a730a88>
+
+on 2016-01-25.  Immediate symptom was it would take approx. 1 minute to
+get the result back.
+
+A LOT of investigation pointed to something weird with POE and select.
+It looked like it was select()'ing on the correct file descriptor to
+continue getting data, but the select() was returning that fd as not
+ready until after the connection was closed.  At that point select()
+would trigger reading and the whole request would complete.
+
+strace showed actual system read() as having already retrieved
+everything, and thus this is likely the cause of perl's select() saying
+"nothing ready there".  However perl's sysread() in 4096 byte chunks had not
+yet actually read everything.
+
+So, POE bug?  Perl bug?  Linux bug?  Oh! Could it be the SSL layer getting
+in the way?  sysread() at the level we're using it is getting plain-text,
+but the actual read(2) call will be seeing the encrypted data.
