@@ -7,6 +7,7 @@ use POE::Component::IRC;
 use MiggyIRCBot::ConfigFile;
 use MiggyIRCBot::URLParse;
 use POSIX qw/strftime/;
+use Data::Dumper;
 
 my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
