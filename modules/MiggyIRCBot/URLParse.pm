@@ -5,9 +5,9 @@ use warnings;
 use POSIX;
 use Data::Dumper;
 use POE;
+use HTTP::Request;
 use POE::Component::Client::HTTP;
 use POE::Component::IRC::Plugin qw(:ALL);
-use HTTP::Request;
 use HTML::TreeBuilder;
 use JSON;
 use Date::Parse;
@@ -19,6 +19,7 @@ my %sites = (
   '^http(s)?:\/\/www\.youtube\.com\/user\/.+\/live' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
   '^http(s)?:\/\/(i\.)?imgur\.com\/([^\.\/]+)(\..+)?$' => {get => \&get_imgur_image, parse => \&parse_imgur_image},
   '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
+  '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
 );
 
 sub new {
@@ -35,16 +36,17 @@ sub PCI_register {
   my ($self,$irc) = @_;
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
-  unless ( $self->{http_alias} ) {   
-    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
+
+  unless ( $self->{http_alias} ) {
+    $self->{http_alias} = join('-', 'ua-miggyselfbot', $irc->session_id() );
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
       Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
-      Timeout         => 300,
       FollowRedirects => $self->{follow_redirects},
     );
   }
+
   $self->{session_id} = POE::Session->create(
     object_states => [
       $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album ) ],
@@ -79,7 +81,7 @@ sub _shutdown {
 
 sub get_url {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
-printf STDERR "GET_URL\n";
+#printf STDERR "GET_URL\n";
   $kernel->post( $self->{session_id}, '_get_url', @_[ARG0..$#_] );
   undef;
 }
@@ -87,8 +89,7 @@ printf STDERR "GET_URL\n";
 sub _get_url {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-
-printf STDERR "_GET_URL\n";
+#printf STDERR "_GET_URL\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
@@ -99,8 +100,8 @@ printf STDERR "_GET_URL\n";
 printf STDERR "_GET_URL: URL '%s'\n", $args{'url'};
   my $done;
   foreach my $site (keys(%sites)) {
-printf STDERR "_GET_URL: Checking site '%s'\n", $site;
-    if ($args{'url'} =~ $site) {
+#printf STDERR "_GET_URL: Checking site '%s'\n", $site;
+    if ($args{'url'} =~ $site and ${$sites{$site}}{'get'}) {
 printf STDERR "_GET_URL: Recognised a %s site...\n", $site; #\t%s\n", $site, Dumper(${sites}{$site});
       $sites{$site}->{'get'}->($kernel, $self, \%args);
       $done = 1;
@@ -109,7 +110,7 @@ printf STDERR "_GET_URL: Recognised a %s site...\n", $site; #\t%s\n", $site, Dum
   }
 
   if (! $done) {
-#printf STDERR "_GET_URL: posting to http_alias\n";
+#printf STDERR "_GET_URL: posting to get_generic\n";
     $kernel->post( $self->{session_id}, 'get_generic', @_[ARG0..$#_] );
   }
 
@@ -120,7 +121,7 @@ sub get_generic {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
 
-#printf STDERR "_GET_URL\n";
+#printf STDERR "_GET_GENERIC\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
@@ -128,8 +129,11 @@ sub get_generic {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
-  my $req = HTTP::Request->new('GET', $args{'url'});
-#printf STDERR "_GET_URL: posting to http_alias\n";
+  # If you don't add the 'Connection: close' header than a HTTP/1.1 server
+  # with a long persistent connection timeout will mean you don't actually
+  # get your full response until it closes the connection.
+  my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close']);
+mylog("_GET_GENERIC: '", $args{'url'}, "'");
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
   undef;
 }
@@ -144,8 +148,8 @@ sub _parse_url {
   my $res = $response->[0];
 
   if (! $res->is_success) {
-#printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
-#printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
+printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
       $error .= $+{'errornum'} . ": " . $+{'errorstr'};
@@ -156,7 +160,7 @@ sub _parse_url {
   } else {
 #printf STDERR "_PARSE_URL: res == success\n";
     # Check if it's a site we have a special handler for
-printf STDERR "_PARSE_URL: args->{url} = '%s'\n", $args->{'url'};
+#printf STDERR "_PARSE_URL: args->{url} = '%s'\n", $args->{'url'};
     my ($host) = $args->{'url'} =~ /^http[s]?:\/\/([^\/:]+)(:[0-9]+)?\//;
     my $done;
     foreach my $site (keys(%sites)) {
@@ -524,7 +528,41 @@ printf STDERR "PARSE_IMGUR_ALBUM: Content: '%s'\n", $res->content;
   $kernel->post(@params);
   undef;
 }
+###########################################################################
 
+###########################################################################
+# https://community.elitedangerous.com/galnet/uid/...
+###########################################################################
+sub parse_community_elitedangeros_com_galnet_uid {
+  my ($res, $args) = @_;
+
+#printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n";
+  my $blurb = "";
+  if ($res->header('Content-Type') =~ /^text\/(ht|x)ml/) {
+#printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tGot HTML or XML reply\n";
+#printf STDERR $res->content, "\n";
+    my $tree = HTML::TreeBuilder->new;
+    $tree->parse($res->decoded_content);
+    $tree->eof();
+    my $title = $tree->look_down('_tag' => 'h3', 'class' => qr/.*galnetNewsArticleTitle.*/);
+    if (! $title) {
+printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tNo galnetNewsArticleTitle\n";
+      return undef;
+    }
+
+    my $galnet_title = $title->look_down('_tag' => 'a');
+    if ($galnet_title) {
+#printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tFound galnet title text\n";
+      return sprintf("[ %s ] - Elite Dangerous GalNet (community.elitedangerous.com/galnet)", $galnet_title->as_text) ;
+    }
+
+  # } elsif (image) {
+  } else {
+    $args->{'quiet'} = 1;
+    return "That was not an HTML page";
+  }
+  return undef;
+}
 ###########################################################################
 
 ###########################################################################
@@ -537,6 +575,10 @@ sub prettyprint {
   # Put the dollar sign in the right place
   #$number =~ s/^(-?)/$1\$/;
   $number;
+}
+
+sub mylog {
+  printf STDERR "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), join("", @_);
 }
 ###########################################################################
 
