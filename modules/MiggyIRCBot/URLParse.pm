@@ -25,14 +25,14 @@ my %sites = (
   '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
   '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
   '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
-  '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => \&parse_reddit_com },
+  '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
 );
 
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
 
-printf STDERR "MiggyIRCBot::URLParse->new()\n";
+#printf STDERR "MiggyIRCBot::URLParse->new()\n";
   $youtube_api_key = $args{'youtube_api_key'};
   ($imgur_clientid, $imgur_clientsecret) = ($args{'imgur_clientid'}, $args{'imgur_clientsecret'});
   ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password) = ($args{'reddit_clientid'}, $args{'reddit_secret'}, $args{'reddit_username'}, $args{'reddit_password'});
@@ -43,7 +43,7 @@ printf STDERR "MiggyIRCBot::URLParse->new()\n";
 sub PCI_register {
   my ($self,$irc) = @_;
   $self->{irc} = $irc;
-printf STDERR "MiggyIRCBot::URLParse->PCI_register()\n";
+#printf STDERR "MiggyIRCBot::URLParse->PCI_register()\n";
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
 
   unless ( $self->{http_alias} ) {
@@ -77,7 +77,7 @@ printf STDERR "MiggyIRCBot::URLParse->PCI_register()\n";
 
 sub PCI_unregister {
   my ($self,$irc) = splice @_, 0, 2;
-printf STDERR "MiggyIRCBot::URLParse->PCI_unregister()\n";
+#printf STDERR "MiggyIRCBot::URLParse->PCI_unregister()\n";
   $poe_kernel->state( 'get_url' );
   $poe_kernel->call( $self->{session_id} => '_shutdown' );
   delete $self->{irc};
@@ -86,7 +86,7 @@ printf STDERR "MiggyIRCBot::URLParse->PCI_unregister()\n";
 
 sub _start {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
-printf STDERR "MiggyIRCBot::URLParse->_start()\n";
+#printf STDERR "MiggyIRCBot::URLParse->_start()\n";
   $self->{session_id} = $_[SESSION]->ID();
   $kernel->refcount_increment( $self->{session_id}, __PACKAGE__ );
   undef;
@@ -94,7 +94,7 @@ printf STDERR "MiggyIRCBot::URLParse->_start()\n";
 
 sub _shutdown {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
-printf STDERR "MiggyIRCBot::URLParse->_shutdown()\n";
+#printf STDERR "MiggyIRCBot::URLParse->_shutdown()\n";
   $kernel->alarm_remove_all();
   $kernel->refcount_decrement( $self->{session_id}, __PACKAGE__ );
   $kernel->call( $self->{http_alias} => 'shutdown' );
@@ -222,15 +222,6 @@ printf STDERR "_PARSE_URL: Recognised a %s site...\n", $site;
   undef;
 }
 
-sub parse_imgur_com {
-  my ($res, $args) = @_;
-
-# imgur.com is a PITA, fills in <title> etc after the fact with javascript
-# waste of time to respond with the generic page title
-## 16:25:35 <bigp3rm-> NASA just released an image of the new planet 168:http://imgur.com/yfTAqXq
-## 16:25:36 <EDBot> [ New images of Planet 9 worrying for scientists. - Imgur ] - imgur.com
-  return "";
-}
 
 ###########################################################################
 # www.youtube.com parsing for video URLs
@@ -634,25 +625,8 @@ sub get_reddit_com {
   my @params;
 printf STDERR "GET_REDDIT_COM\n";
 
-printf STDERR "reddit -> %s\n", Dumper($reddit);
   $kernel->post('miggyircbot-reddit', 'get_reddit_url_info', $args);
-  #$kernel->yield('get_reddit_url_info', $args);
 
-  undef;
-}
-###########################################################################
-
-###########################################################################
-# parse_reddit_com
-###########################################################################
-sub parse_reddit_com {
-  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
-  my $args = $request->[1];
-  my @params;
-  push @params, $args->{session};
-printf STDERR "PARSE_REDDIT_COM\n";
-
-  $kernel->post(@params);
   undef;
 }
 ###########################################################################
