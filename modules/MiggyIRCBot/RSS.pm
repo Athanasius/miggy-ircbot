@@ -67,6 +67,7 @@ sub PCI_unregister {
 
 sub _start {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
+printf STDERR "MiggyIRCBot::RSS->_start()\n";
   $self->{session_id} = $_[SESSION]->ID();
   $kernel->refcount_increment( $self->{session_id}, __PACKAGE__ );
   undef;

@@ -18,6 +18,11 @@ our %config = (
   'youtube_api_key' => '',
   'imgur_clientid' => '',
   'imgur_clientsecret' => '',
+  'reddit_clientid' => '',
+  'reddit_secret' => '',
+  'reddit_username' => '',
+  'reddit_password' => '',
+  'reddit_authorization_redirect' => '',
 );
 
 sub new {
@@ -73,6 +78,16 @@ sub new {
       $config{'imgur_clientid'} = $1;
     } elsif (/^imgur_clientsecret:\s+(.*)$/i) {
       $config{'imgur_clientsecret'} = $1;
+    } elsif (/^reddit_clientid:\s+(.*)$/i) {
+      $config{'reddit_clientid'} = $1;
+    } elsif (/^reddit_secret:\s+(.*)$/i) {
+      $config{'reddit_secret'} = $1;
+    } elsif (/^reddit_username:\s+(.*)$/i) {
+      $config{'reddit_username'} = $1;
+    } elsif (/^reddit_password:\s+(.*)$/i) {
+      $config{'reddit_password'} = $1;
+    } elsif (/^reddit_authorization_redirect:\s+(.*)$/i) {
+      $config{'reddit_authorization_redirect'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }
