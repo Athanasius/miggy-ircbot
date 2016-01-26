@@ -425,10 +425,10 @@ printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
           $blurb .= "<no title>";
         }
         if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
-          $blurb .= " | *NSFW* ";
+          $blurb .= " | *NSFW*";
         }
         if (defined($d->{'animated'}) and $d->{'animated'} eq 'true') {
-          $blurb .= " | *ANIMATED* ";
+          $blurb .= " | *ANIMATED*";
         }
         if (defined($d->{'size'})) {
           $blurb .= " | Size: " . prettyprint($d->{'size'});
