@@ -12,7 +12,7 @@ Vital to making bot more generic and easier to configure.
     Reddit
     community.elitedangerous.com (galnet) - DONE
     https://support.frontier.co.uk/kb/faq.php?id=185
-    coriolis.io (build name, ship type?)
+    coriolis.io (build name, ship type?) - DONE
     edshipyard.com
     Twitter
     Facebook?
