@@ -109,7 +109,7 @@ sub _get_rss_items {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 #printf STDERR "_GET_ITEMS: posting to http_alias\n";
-  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new( GET => $rss_url ), \%args );
+  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new('GET', $rss_url, ['Connection' => 'close'] ), \%args );
   undef;
 }
 
