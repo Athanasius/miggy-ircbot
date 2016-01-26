@@ -136,10 +136,10 @@ sub _get_reddit_url_info {
   my %args;
 printf STDERR "_GET_REDDIT_URL_INFO\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
-printf STDERR "_GET_REDDIT_URL_INFO: ARGO is hash ref\n";
+#printf STDERR "_GET_REDDIT_URL_INFO: ARGO is hash ref\n";
      %args = %{ $_[ARG0] };
   } else {
-printf STDERR "_GET_REDDIT_URL_INFO: ARGO is NOT hash ref\n";
+#printf STDERR "_GET_REDDIT_URL_INFO: ARGO is NOT hash ref\n";
      %args = @_[ARG0..$#_];
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
@@ -157,7 +157,7 @@ printf STDERR "_GET_REDDIT_URL_INFO: no URL!\n";
 printf STDERR "_GET_REDDIT_URL_INFO: Url '%s'\n", $args{'url'};
   my (undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/(r\/[^\/]+\/comments\/[^\/]+)/;
   printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-  my $req = HTTP::Request->new('GET', $args{'url'}, ["Authorization" => "bearer " . $reddit_token ] );
+  my $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/' . $link . '/api/info', ["Authorization" => "bearer " . $reddit_token ] );
   $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_url_info', $req, \%args );
   
   undef;
@@ -172,8 +172,6 @@ printf STDERR "_PARSE_REDDIT_URL_INFO\n";
   push @params, $args->{session};
   my $res = $response->[0];
 
-  # Did we not have a valid auth token?
-  # Go fetch the auth token and if that succeeds try this again.
 }
 
 1;
