@@ -221,12 +221,12 @@ sub get_youtube_com {
 #printf STDERR "GET_YOUTUBE_COM: video_id = %s\n", $video_id;
   if ($youtube_api_key and $video_id) {
 printf STDERR "GET_YOUTUBE_COM, using API for '%s'\n", $args->{'url'};
-    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key);
+    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key, ['Connection' => 'close']);
     $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api', $req, $args );
   } else {
 printf STDERR "GET_YOUTUBE_COM, using scraping for '%s'\n", $args->{'url'};
     # If not a specific video
-    my $req = HTTP::Request->new('GET', $args->{'url'});
+    my $req = HTTP::Request->new('GET', $args->{'url'}, ['Connection' => 'close']);
     $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, $args );
   }
 }
@@ -377,7 +377,7 @@ sub get_imgur_image {
 #printf STDERR "GET_IMGUR_IMAGE: image_id = %s\n", $image_id;
   if ($imgur_clientid and $image_id) {
 printf STDERR "GET_IMGUR_IMAGE, using API for '%s' (%s)\n", $args->{'url'}, $image_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid]);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
 #printf STDERR "GET_IMGUR_IMAGE: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_image', $req, $args );
   } else {
@@ -457,7 +457,7 @@ sub get_imgur_album {
 printf STDERR "GET_IMGUR_ALBUM: album_id = %s\n", $album_id;
   if ($imgur_clientid and $album_id) {
 printf STDERR "GET_IMGUR_ALBUM, using API for '%s' (%s)\n", $args->{'url'}, $album_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid]);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
 #printf STDERR "GET_IMGUR_ALBUM: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_album', $req, $args );
   } else {
