@@ -9,7 +9,7 @@ Vital to making bot more generic and easier to configure.
    want not being in the <title>
     YouTube - DONE - Gaming site?
     Imgur - DONE
-    Reddit
+    Reddit - DONE
     community.elitedangerous.com (galnet) - DONE
     https://support.frontier.co.uk/kb/faq.php?id=185
     coriolis.io (build name, ship type?) - DONE

@@ -71,11 +71,13 @@ printf STDERR "_GET_REDDIT_AUTH_TOKEN\n";
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
   $heap->{reddit_url} = $args{'url'};
+  $heap->{_channel} = $args{'_channel'};
   my $h = HTTP::Headers->new;
   $h->authorization_basic($reddit_clientid, $reddit_secret);
+  $h->header("Connection" => "close");
   my $req = HTTP::Request->new('POST', 'https://www.reddit.com/api/v1/access_token', $h, 'grant_type=password&username=' . $reddit_username . '&password=' . $reddit_password);
-printf STDERR "_GET_REDDIT_AUTH_TOKEN: Request = '%s'\n", Dumper($req);
-  $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_auth_token', $req);
+#printf STDERR "_GET_REDDIT_AUTH_TOKEN: Request = '%s'\n", Dumper($req);
+  $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_auth_token', $req, \%args);
 
   undef;
 }
@@ -108,11 +110,11 @@ printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: X-PCCH-Errmsg: %s\n", $res->header('X-P
       } else {
         $reddit_token = $json->{'access_token'};
 printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: token is now '%s'\n", $reddit_token;
-        my %args = ( url => $heap->{'reddit_url'} );
+        my %args = ( url => $heap->{'reddit_url'}, _channel => $heap->{'_channel'} );
         my @args;
         $args[0] = \%args;
-printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: \@args is %s\n", Dumper(\@args);
-        push @params, '_get_reddit_url_info',  @args;
+#printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: \@args is %s\n", Dumper(\@args);
+        push @params, '_get_reddit_url_info',  $args;
       }
     } else {
       push @params, 'irc_miggybot_url_error', $args, "Reddit Auth Token response wasn't JSON!";
@@ -155,16 +157,17 @@ printf STDERR "_GET_REDDIT_URL_INFO: no URL!\n";
     return 0;
   }
 printf STDERR "_GET_REDDIT_URL_INFO: Url '%s'\n", $args{'url'};
-  my (undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/(r\/[^\/]+\/comments\/[^\/]+)/;
+  my (undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/([^\/]+)/;
   printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-  my $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/' . $link . '/api/info', ["Authorization" => "bearer " . $reddit_token ] );
-  $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_url_info', $req, \%args );
+  my $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+#printf STDERR "_GET_REDDIT_URL_INFO: Request = '%s'\n", Dumper($req);
+  $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_url_info', $req, \%args);
   
   undef;
 }
 
 sub _parse_reddit_url_info {
-  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my ($kernel, $heap, $self, $request, $response) = @_[KERNEL, HEAP, OBJECT, ARG0, ARG1];
   my $args = $request->[1];
   my @params;
 
@@ -172,6 +175,43 @@ printf STDERR "_PARSE_REDDIT_URL_INFO\n";
   push @params, $args->{session};
   my $res = $response->[0];
 
+  if (! $res->is_success) {
+printf STDERR "_PARSE_REDDIT_URL_INFO: res != success: $res->status_line\n";
+printf STDERR "_PARSE_REDDIT_URL_INFO: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error = "Failed to parse Reddit API response: ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+printf STDERR "_PARSE_REDDIT_URL_INFO: res == success\n";
+    if ($res->header('Content-Type') =~ /application\/json/) {
+printf STDERR "_PARSE_REDDIT_URL_INFO: Content-Type is application/json\n";
+      my $json = decode_json($res->content);
+      if (!defined($json->{'data'})) {
+printf STDERR "_PARSE_REDDIT_URL_INFO: data is NOT present in JSON\n";
+        push @params, 'irc_miggybot_url_error', $args, "Reddit API response was JSON, but no data";
+      } else {
+#printf STDERR "_PARSE_REDDIT_URL_INFO: data is present in JSON:\n%s\n", Dumper($json);
+        my $item = $json->{'data'}{'children'}[0]->{'data'};
+        if (! $item) {
+          push @params, 'irc_miggybot_url_error', $args, "Reddit API response was JSON, with data, but couldn't find children data";
+        } else {
+          my $d = sprintf("[REDDIT] %s (%s) | %d points (%d|%d) | %d comments | Posted by %s", $item->{'title'}, $item->{'subreddit'}, $item->{'ups'} + $item->{'downs'}, $item->{'score'}, $item->{'downs'}, $item->{'num_comments'}, $item->{'author'});
+          push @params, 'irc_miggybot_url_success', $args, $d;
+        }
+      }
+    } else {
+printf STDERR "_PARSE_REDDIT_URL_INFO: Response was NOT JSON\n";
+      push @params, 'irc_miggybot_url_error', $args, "Reddit API response wasn't JSON!";
+    }
+  }
+
+#printf STDERR "_PARSE_REDDIT_URL_INFO: \@params: %s\n", Dumper(\@params);
+  $kernel->post(@params);
+  undef;
 }
 
 1;
