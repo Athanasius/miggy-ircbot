@@ -8,8 +8,11 @@ Vital to making bot more generic and easier to configure.
 *) Per site URL parsing to pull extra information or cope with the blurb we
    want not being in the <title>
     YouTube - DONE - Gaming site?
-    Imgur - DONE - gallery URLs ? http://imgur.com/gallery/roB621A
+      https://youtu.be/MOoinEmmVLI
+    Imgur - DONE - gallery URLs ?
+      http://imgur.com/gallery/roB621A
     Reddit
+      DONE-ish, need to check over all possible types of URL
     community.elitedangerous.com (galnet) - DONE
     https://support.frontier.co.uk/kb/faq.php?id=185
     coriolis.io (build name, ship type?) - DONE
