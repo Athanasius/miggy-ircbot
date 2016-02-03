@@ -16,6 +16,7 @@ my $youtube_api_key;
 my ($imgur_clientid, $imgur_clientsecret);
 my %sites = (
   '^http(s)?:\/\/www\.youtube\.com\/watch\?v=' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
+  '^http(s)?:\/\/youtu\.be\/' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
   '^http(s)?:\/\/www\.youtube\.com\/user\/.+\/live' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
   '^http(s)?:\/\/(i\.)?imgur\.com\/([^\.\/]+)(\..+)?$' => {get => \&get_imgur_image, parse => \&parse_imgur_image},
   '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
@@ -218,7 +219,7 @@ sub parse_imgur_com {
 sub get_youtube_com {
   my ($kernel, $self, $args) = @_;
 
-  my (undef, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.youtube\.com\/watch\?v=([^\?&]+)/;
+  my (undef, undef, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/(www\.youtube\.com\/watch\?v=|youtu\.be\/)([^\?&]+)/;
 #printf STDERR "GET_YOUTUBE_COM: video_id = %s\n", $video_id;
   if ($youtube_api_key and $video_id) {
 printf STDERR "GET_YOUTUBE_COM, using API for '%s'\n", $args->{'url'};
