@@ -25,7 +25,7 @@ sub new {
       $self => [ qw(_shutdown _start _get_reddit_auth_token _parse_reddit_auth_token get_reddit_url_info _get_reddit_url_info _parse_reddit_url_info ) ],
     ],
   )->ID();
-printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): Got Session\n";
+#printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): Got Session\n";
   unless ( $self->{http_alias} ) {
     $self->{http_alias} = join('-', 'ua-miggyircbot-reddit', $self->{session_id} );
     $self->{follow_redirects} ||= 2;
@@ -36,7 +36,7 @@ printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): Got Session\n";
       FollowRedirects => $self->{follow_redirects},
     );
   }
-printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): \$self = %s\n", Dumper($self);
+#printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): \$self = %s\n", Dumper($self);
 
   return $self;
 }
