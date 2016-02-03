@@ -23,6 +23,10 @@ my %sites = (
   '^http(s)?:\/\/imgur\.com\/gallery\/([^\.\/]+)$' => {get => \&get_imgur_gallery, parse => \&parse_imgur_gallery },
   '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
   '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
+
+## Ignores
+  # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
+  '^http(s)?:\/\/(.+\.)?quickmeme\.com\/.+\.[^\.]{3}$' => { get => \&ignore_url, parse => undef },
 );
 
 sub new {
@@ -203,15 +207,6 @@ printf STDERR "_PARSE_URL: Recognised a %s site...\n", $site;
   undef;
 }
 
-sub parse_imgur_com {
-  my ($res, $args) = @_;
-
-# imgur.com is a PITA, fills in <title> etc after the fact with javascript
-# waste of time to respond with the generic page title
-## 16:25:35 <bigp3rm-> NASA just released an image of the new planet 168:http://imgur.com/yfTAqXq
-## 16:25:36 <EDBot> [ New images of Planet 9 worrying for scientists. - Imgur ] - imgur.com
-  return "";
-}
 
 ###########################################################################
 # www.youtube.com parsing for video URLs
@@ -685,6 +680,14 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: does NOT match regex\n";
   undef;
 }
 ###########################################################################
+
+sub ignore_url {
+  my ($kernel, $self, $args) = @_;
+
+  printf "Ignoring URL '%s'\n", $args->{'url'};
+
+  undef;
+}
 
 ###########################################################################
 # Misc helper subs

@@ -15,19 +15,20 @@ Vital to making bot more generic and easier to configure.
     Reddit
       DONE-ish, need to check over all possible types of URL
     community.elitedangerous.com (galnet) - DONE
-    https://support.frontier.co.uk/kb/faq.php?id=185
     coriolis.io (build name, ship type?) - DONE
+
+    https://support.frontier.co.uk/kb/faq.php?id=185
+    Twitch.TV
     edshipyard.com
+    http://www.nasa.gov/multimedia/nasatv/index.html
     Twitter
     Facebook?
-    Twitch.TV
     gfycat.com
     imgflip.com
     dropbox.com
     slashdot.org
     picasaweb.google.com
     www.flickr.com
-    http://www.nasa.gov/multimedia/nasatv/index.html
     instagram
     prntscr.com
     pastebin.com
@@ -36,7 +37,7 @@ Vital to making bot more generic and easier to configure.
 
   And just ignore:
 
-    quickmeme.com (images only)
+    quickmeme.com (images only) DONE
     https://www.google.co.uk/search (obvious from URL)
 
 *) If we have Q Auth details then delay channel join until after auth (or some timer?).
