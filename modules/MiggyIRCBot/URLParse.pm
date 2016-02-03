@@ -4,16 +4,20 @@ use strict;
 use warnings;
 use POSIX;
 use Data::Dumper;
+
 use POE;
-use HTTP::Request;
 use POE::Component::Client::HTTP;
 use POE::Component::IRC::Plugin qw(:ALL);
+use MiggyIRCBot::URLParse::Reddit;
+use HTTP::Request;
 use HTML::TreeBuilder;
 use JSON;
 use Date::Parse;
 
 my $youtube_api_key;
 my ($imgur_clientid, $imgur_clientsecret);
+my ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password);
+my $reddit;
 my %sites = (
   '^http(s)?:\/\/www\.youtube\.com\/watch\?v=' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
   '^http(s)?:\/\/youtu\.be\/' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
@@ -23,6 +27,7 @@ my %sites = (
   '^http(s)?:\/\/imgur\.com\/gallery\/([^\.\/]+)$' => {get => \&get_imgur_gallery, parse => \&parse_imgur_gallery },
   '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
   '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
+  '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
 
 ## Ignores
   # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
@@ -33,8 +38,10 @@ sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
 
+#printf STDERR "MiggyIRCBot::URLParse->new()\n";
   $youtube_api_key = $args{'youtube_api_key'};
   ($imgur_clientid, $imgur_clientsecret) = ($args{'imgur_clientid'}, $args{'imgur_clientsecret'});
+  ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password) = ($args{'reddit_clientid'}, $args{'reddit_secret'}, $args{'reddit_username'}, $args{'reddit_password'});
 
 	return $self;
 }
@@ -42,13 +49,15 @@ sub new {
 sub PCI_register {
   my ($self,$irc) = @_;
   $self->{irc} = $irc;
+#printf STDERR "MiggyIRCBot::URLParse->PCI_register()\n";
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
 
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyselfbot', $irc->session_id() );
+    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
+      # Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
       Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
       FollowRedirects => $self->{follow_redirects},
     );
@@ -60,11 +69,21 @@ sub PCI_register {
     ],
   )->ID();
   $poe_kernel->state( 'get_url', $self );
+
+  $reddit = MiggyIRCBot::URLParse::Reddit->new(
+    reddit_clientid     => $reddit_clientid,
+    reddit_secret       => $reddit_secret,
+    reddit_username     => $reddit_username,
+    reddit_password     => $reddit_password,
+  );
+#printf STDERR "reddit -> %s\n", Dumper($reddit);
+
   return 1;
 }
 
 sub PCI_unregister {
   my ($self,$irc) = splice @_, 0, 2;
+#printf STDERR "MiggyIRCBot::URLParse->PCI_unregister()\n";
   $poe_kernel->state( 'get_url' );
   $poe_kernel->call( $self->{session_id} => '_shutdown' );
   delete $self->{irc};
@@ -73,6 +92,7 @@ sub PCI_unregister {
 
 sub _start {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
+#printf STDERR "MiggyIRCBot::URLParse->_start()\n";
   $self->{session_id} = $_[SESSION]->ID();
   $kernel->refcount_increment( $self->{session_id}, __PACKAGE__ );
   undef;
@@ -80,6 +100,7 @@ sub _start {
 
 sub _shutdown {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
+#printf STDERR "MiggyIRCBot::URLParse->_shutdown()\n";
   $kernel->alarm_remove_all();
   $kernel->refcount_decrement( $self->{session_id}, __PACKAGE__ );
   $kernel->call( $self->{http_alias} => 'shutdown' );
@@ -681,6 +702,23 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: does NOT match regex\n";
 }
 ###########################################################################
 
+###########################################################################
+# get_reddit_com
+###########################################################################
+sub get_reddit_com {
+  my ($kernel, $self, $args) = @_;
+  my @params;
+printf STDERR "GET_REDDIT_COM\n";
+
+  $kernel->post('miggyircbot-reddit', 'get_reddit_url_info', $args);
+
+  undef;
+}
+###########################################################################
+
+###########################################################################
+# Ignore URLs
+###########################################################################
 sub ignore_url {
   my ($kernel, $self, $args) = @_;
 
@@ -688,6 +726,7 @@ sub ignore_url {
 
   undef;
 }
+###########################################################################
 
 ###########################################################################
 # Misc helper subs

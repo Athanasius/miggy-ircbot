@@ -21,6 +21,7 @@ Vital to making bot more generic and easier to configure.
     Twitch.TV
     edshipyard.com
     http://www.nasa.gov/multimedia/nasatv/index.html
+    http://steamcommunity.com/sharedfiles/filedetails/?id=586886178
     Twitter
     Facebook?
     gfycat.com
