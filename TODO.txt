@@ -14,6 +14,7 @@ Vital to making bot more generic and easier to configure.
       http://i.imgur.com/072AqZc.jpg?1 - Already handled by suffix stripping
     Reddit
       DONE-ish, need to check over all possible types of URL
+      https://www.reddit.com/r/KenM/
     community.elitedangerous.com (galnet) - DONE
     coriolis.io (build name, ship type?) - DONE
 

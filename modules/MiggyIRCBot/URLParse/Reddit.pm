@@ -7,6 +7,7 @@ use POE;
 use POE::Component::Client::HTTP;
 use HTTP::Request;
 use JSON;
+use POSIX qw/strftime/;
 use Data::Dumper;
 
 my ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password);
@@ -157,12 +158,17 @@ printf STDERR "_GET_REDDIT_URL_INFO: no URL!\n";
     return 0;
   }
 printf STDERR "_GET_REDDIT_URL_INFO: Url '%s'\n", $args{'url'};
-  my (undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/([^\/]+)/;
-  printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-  my $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+  my (undef, $link, $req);
+  if ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/([^\/]+)/) {
+#printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
+    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
 #printf STDERR "_GET_REDDIT_URL_INFO: Request = '%s'\n", Dumper($req);
+  } elsif ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/r\/([^\/]+)\//) {
+printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
+    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/r/' . $link . '/about', ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+  }
   $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_url_info', $req, \%args);
-  
+
   undef;
 }
 
@@ -186,21 +192,26 @@ printf STDERR "_PARSE_REDDIT_URL_INFO: X-PCCH-Errmsg: %s\n", $res->header('X-PCC
     }
     push @params, 'irc_miggybot_url_error', $args, $error;
   } else {
-printf STDERR "_PARSE_REDDIT_URL_INFO: res == success\n";
+#printf STDERR "_PARSE_REDDIT_URL_INFO: res == success\n";
     if ($res->header('Content-Type') =~ /application\/json/) {
-printf STDERR "_PARSE_REDDIT_URL_INFO: Content-Type is application/json\n";
+#printf STDERR "_PARSE_REDDIT_URL_INFO: Content-Type is application/json\n";
       my $json = decode_json($res->content);
       if (!defined($json->{'data'})) {
 printf STDERR "_PARSE_REDDIT_URL_INFO: data is NOT present in JSON\n";
         push @params, 'irc_miggybot_url_error', $args, "Reddit API response was JSON, but no data";
       } else {
-#printf STDERR "_PARSE_REDDIT_URL_INFO: data is present in JSON:\n%s\n", Dumper($json);
+printf STDERR "_PARSE_REDDIT_URL_INFO: data is present in JSON:\n%s\n", Dumper($json);
         my $item = $json->{'data'}{'children'}[0]->{'data'};
-        if (! $item) {
-          push @params, 'irc_miggybot_url_error', $args, "Reddit API response was JSON, with data, but couldn't find children data";
-        } else {
+        if ($item) {
           my $d = sprintf("[REDDIT] %s (%s) | %d points (%d|%d) | %d comments | Posted by %s", $item->{'title'}, $item->{'subreddit'}, $item->{'ups'} + $item->{'downs'}, $item->{'score'}, $item->{'downs'}, $item->{'num_comments'}, $item->{'author'});
           push @params, 'irc_miggybot_url_success', $args, $d;
+        } elsif ($json->{'data'}{'url'}) {
+          $item = $json->{'data'};
+          chomp($item->{'public_description'});
+          my $d = sprintf("[REDDIT] https://www.reddit.com%s \"%s\" | Created: %s | Subscribers: %d | Description: %s", $item->{'url'}, $item->{'title'}, strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($item->{'created_utc'})), $item->{'subscribers'}, $item->{'public_description'});
+          push @params, 'irc_miggybot_url_success', $args, $d;
+        } else {
+          push @params, 'irc_miggybot_url_error', $args, "Reddit API response was JSON, with data, but couldn't find children data";
         }
       }
     } else {
