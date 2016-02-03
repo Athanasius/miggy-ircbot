@@ -34,9 +34,13 @@ sub _start {
 
   $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
-            youtube_api_key => $config->getconf('youtube_api_key'),
-            imgur_clientid => $config->getconf('imgur_clientid'),
-            imgur_clientsecret => $config->getconf('imgur_clientsecret')
+      youtube_api_key => $config->getconf('youtube_api_key'),
+      imgur_clientid => $config->getconf('imgur_clientid'),
+      imgur_clientsecret => $config->getconf('imgur_clientsecret'),
+      reddit_username => $config->getconf('reddit_username'),
+      reddit_password => $config->getconf('reddit_password'),
+      reddit_clientid => $config->getconf('reddit_clientid'),
+      reddit_secret => $config->getconf('reddit_secret'),
     )
   );
 
@@ -61,9 +65,9 @@ sub irc_001 {
 ###########################################################################
 sub irc_miggybot_url_success {
   my ($kernel,$sender,$args,$title) = @_[KERNEL,SENDER,ARG0,ARG1];
-  my $channel = delete $args->{_channel};
+#  my $channel = delete $args->{_channel};
 
-#printf STDERR "irc_miggybot_url_success:\n";
+printf STDERR "irc_miggybot_url_success:\n";
   if (defined($_[ARG1]) and $_[ARG1] ne "" and $args->{quiet} == 0) {
     my $blurb = $_[ARG1];
     print $blurb, "\n";
@@ -75,6 +79,7 @@ sub irc_miggybot_url_error {
   my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
   my $channel = delete $args->{_channel};
 
+printf STDERR "irc_miggybot_url_error:\n";
 mylog("irc_miggybot_url_error...");
   print $error, "\n";
   exit(0);

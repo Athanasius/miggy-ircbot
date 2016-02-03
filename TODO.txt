@@ -18,6 +18,7 @@ Vital to making bot more generic and easier to configure.
     https://support.frontier.co.uk/kb/faq.php?id=185
     coriolis.io (build name, ship type?) - DONE
     edshipyard.com
+    http://steamcommunity.com/sharedfiles/filedetails/?id=586886178
     Twitter
     Facebook?
     Twitch.TV
