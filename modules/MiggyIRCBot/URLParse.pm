@@ -11,6 +11,7 @@ use POE::Component::IRC::Plugin qw(:ALL);
 use MiggyIRCBot::URLParse::Reddit;
 use HTTP::Request;
 use HTML::TreeBuilder;
+use URI::Escape;
 use JSON;
 use Date::Parse;
 
@@ -212,7 +213,7 @@ printf STDERR "_PARSE_URL: Recognised a %s site...\n", $site;
         $tree->eof();
         my $title = $tree->look_down('_tag', 'title');
         if ($title) {
-          push @params, 'irc_miggybot_url_success', $args, "[ " . $title->as_text . " ] - " . $host;
+          push @params, 'irc_miggybot_url_success', $args, "[ " . trunc_str($title->as_text, 400) . " ] - " . $host;
         } else {
           push @params, 'irc_miggybot_url_error', $args, "No <title> found in URL content";
         }
@@ -281,7 +282,7 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
 #printf STDERR "PARSE_YOUTUBE_API got items and it contains id\n";
         my $v = $json->{'items'}[0];
 # 21:02:28<EDBot> [YouTube] Title: The Good, The Bad and The Bucky: Highlights from the Buckyball Run | Uploader: Esvandiary | Uploaded: 2015-05-15 00:47:44 UTC | Duration: 00:07:13 | Views: 1,591 | Comments: 7 | Likes: 39 | Dislikes: 1
-        my $blurb = "[ YouTube ] Title: " . $v->{'snippet'}{'title'};
+        my $blurb = "[ YouTube ] Title: " . trunc_str($v->{'snippet'}{'title'}, 256);
         $blurb .= " | Uploader: " . $v->{'snippet'}{'channelTitle'};
         my $pub_timet = str2time($v->{'snippet'}{'publishedAt'});
         if (defined($pub_timet)) {
@@ -439,7 +440,7 @@ printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         my $d = $json->{'data'};
         my $blurb = "[ Imgur Image ] - ";
         if (defined($d->{'title'})) {
-          $blurb .= "Title: " . $d->{'title'};
+          $blurb .= "Title: " . trunc_str($d->{'title'}, 256);
         } else {
           $blurb .= "<no title>";
         }
@@ -519,7 +520,7 @@ printf STDERR "PARSE_IMGUR_ALBUM: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         my $d = $json->{'data'};
         my $blurb = "[ Imgur Album ] - ";
         if (defined($d->{'title'})) {
-          $blurb .= "Title: " . $d->{'title'};
+          $blurb .= "Title: " . trunc_str($d->{'title'}, 256);
         } else {
           $blurb .= "<no title>";
         }
@@ -599,7 +600,7 @@ printf STDERR "PARSE_IMGUR_GALLERY: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-E
         my $d = $json->{'data'};
         my $blurb = "[ Imgur Gallery ] - ";
         if (defined($d->{'title'})) {
-          $blurb .= "Title: " . $d->{'title'};
+          $blurb .= "Title: " . trunc_str($d->{'title'});
         } else {
           $blurb .= "<no title>";
         }
@@ -652,7 +653,7 @@ printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tNo galnetNewsArt
     my $galnet_title = $title->look_down('_tag' => 'a');
     if ($galnet_title) {
 #printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tFound galnet title text\n";
-      return sprintf("[ %s ] - Elite Dangerous GalNet (community.elitedangerous.com/galnet)", $galnet_title->as_text) ;
+      return sprintf("[ %s ] - Elite Dangerous GalNet (community.elitedangerous.com/galnet)", trunc_str($galnet_title->as_text, 256)) ;
     }
 
   # } elsif (image) {
@@ -680,13 +681,17 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
   if ($args->{'url'} =~ /^http(s)?:\/\/coriolis\.io\/outfit\/(?<ship_name>[^\/]+)\/[^\?]*(\?bn=(?<build_name>.+))?$/) {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: matches regex\n";
     if (defined($+{'ship_name'})) {
+      my $sn = $+{'ship_name'};
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got ship_name\n";
       if (defined($+{'build_name'})) {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got build_name\n";
-        $blurb = "[ " . $+{'ship_name'} . " - " . $+{'build_name'} . " ] - coriolis.io";
+        my $bn = $+{'build_name'};
+        # For some reason coriolios.io double-encodes / characters in build names
+        $bn =~ s/%252F/\//g;
+        $blurb = "[ " . $sn . " - " . uri_unescape($bn) . " ] - coriolis.io";
       } else {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: but no build_name\n";
-        $blurb = "[ " . $+{'ship_name'} . " ] - coriolis.io";
+        $blurb = "[ " . $sn . " ] - coriolis.io";
       }
     } else {
 printf STDERR "_GET_CORIOLIS_IO_OUTFIT: no ship_name\n";
@@ -739,6 +744,16 @@ sub prettyprint {
   # Put the dollar sign in the right place
   #$number =~ s/^(-?)/$1\$/;
   $number;
+}
+
+sub trunc_str {
+  my ($line, $len) = @_;
+
+  if (length($line) <= $len) {
+    return $line;
+  }
+
+  return substr($line, 0, $len - 3) . "...";
 }
 
 sub mylog {
