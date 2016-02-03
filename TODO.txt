@@ -10,8 +10,8 @@ Vital to making bot more generic and easier to configure.
     YouTube - DONE - Gaming site?
       https://youtu.be/MOoinEmmVLI
     Imgur - DONE - gallery URLs ?
-      http://imgur.com/gallery/roB621A
-      http://i.imgur.com/072AqZc.jpg?1
+      http://imgur.com/gallery/roB621A - DONE
+      http://i.imgur.com/072AqZc.jpg?1 - Already handled by suffix stripping
     Reddit
       DONE-ish, need to check over all possible types of URL
     community.elitedangerous.com (galnet) - DONE
