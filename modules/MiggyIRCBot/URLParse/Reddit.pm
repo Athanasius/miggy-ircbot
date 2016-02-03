@@ -163,7 +163,7 @@ printf STDERR "_GET_REDDIT_URL_INFO: Url '%s'\n", $args{'url'};
 #printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
     $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
 #printf STDERR "_GET_REDDIT_URL_INFO: Request = '%s'\n", Dumper($req);
-  } elsif ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/r\/([^\/]+)\//) {
+  } elsif ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/www\.reddit\.com\/r\/([^\/]+)/) {
 printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
     $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/r/' . $link . '/about', ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
   }
