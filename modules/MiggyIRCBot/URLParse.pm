@@ -34,6 +34,8 @@ my %sites = (
 ## Ignores
   # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
   '^http(s)?:\/\/(.+\.)?quickmeme\.com\/.+\.[^\.]{3}$' => { get => \&ignore_url, parse => undef },
+  # http://eliteraretrader.co.uk/?route=66,52,23,72,62,51,83,99,71,8,9,87,58,10,26,29,65,20,101,4,98,49,28,96,48,37,38,24,93,75,46,44,60,89,55,77,79,30,1,36,13,84,31,25,6,81,70,18,47,67,68,73,63,14,3,43,91,92,33,27,64,80,45,22,19,97,41,86,16,66&name=Full%20Optimized
+  '^http(s)?:\/\/eliteraretrader\.co\.uk\/' => { get => \&ignore_url, parse => undef },
 );
 
 sub new {
