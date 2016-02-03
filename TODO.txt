@@ -11,6 +11,7 @@ Vital to making bot more generic and easier to configure.
       https://youtu.be/MOoinEmmVLI
     Imgur - DONE - gallery URLs ?
       http://imgur.com/gallery/roB621A
+      http://i.imgur.com/072AqZc.jpg?1
     Reddit
       DONE-ish, need to check over all possible types of URL
     community.elitedangerous.com (galnet) - DONE
