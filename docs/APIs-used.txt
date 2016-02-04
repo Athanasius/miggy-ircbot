@@ -1,0 +1,3 @@
+Reddit: <https://www.reddit.com/dev/api>
+Imgur: <https://api.imgur.com/>
+Youtube: <https://developers.google.com/youtube/v3/getting-started>

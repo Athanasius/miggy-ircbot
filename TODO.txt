@@ -8,32 +8,55 @@ Vital to making bot more generic and easier to configure.
 *) Per site URL parsing to pull extra information or cope with the blurb we
    want not being in the <title>
     YouTube - DONE - Gaming site?
-    Imgur - DONE
+      https://youtu.be/MOoinEmmVLI DONE
+      https://www.youtube.com/playlist?list=PL7glm5rbPHKx8MWl-oKkxLvEcAmumMVtw
+      https://www.youtube.com/user/FrontierDevelopments/live
+    Imgur - DONE - gallery URLs ?
+      http://imgur.com/gallery/roB621A - DONE
+      http://i.imgur.com/072AqZc.jpg?1 - Already handled by suffix stripping
     Reddit
+      DONE-ish, need to check over all possible types of URL
+      https://www.reddit.com/r/KenM/
     community.elitedangerous.com (galnet) - DONE
+    coriolis.io (build name, ship type?) - DONE
+
     https://support.frontier.co.uk/kb/faq.php?id=185
-    coriolis.io (build name, ship type?)
-    edshipyard.com
-    Twitter
-    Facebook?
     Twitch.TV
+      http://dev.twitch.tv/
+      https://www.twitch.tv/mercenarythorrn
+      http://www.twitch.tv/jonnyve
+      http://www.twitch.tv/jonnyve/dashboard
+      http://www.twitch.tv/l1nkdnat/c/5760523
+      http://www.twitch.tv/l1nkdnat/manager/highlights
+      http://www.twitch.tv/directory/game/Elite%3A%20Dangerous      
+    www.flickr.com
+      https://flic.kr/p/oPFhWK -> 302
+      https://www.flickr.com/photos/8823090@N03/23728735744/in/dateposted-public/
+    edshipyard.com
+    http://www.nasa.gov/multimedia/nasatv/index.html
+    http://steamcommunity.com/sharedfiles/filedetails/?id=586886178
+    Twitter
+    https://vimeo.com/62554105
     gfycat.com
+      https://gfycat.com/api
+    Facebook?
     imgflip.com
     dropbox.com
     slashdot.org
     picasaweb.google.com
-    www.flickr.com
-    http://www.nasa.gov/multimedia/nasatv/index.html
     instagram
     prntscr.com
     pastebin.com
     docs.google.com
     photobucket.com
+    https://open.spotify.com/artist/2P5kUKkNT67xnSyi3bBOoB
 
   And just ignore:
 
-    quickmeme.com (images only)
+    quickmeme.com (images only) DONE
     https://www.google.co.uk/search (obvious from URL)
+      https://www.google.co.uk/search?client=safari&rls=en&q=.vap+for+t-flight+hotas+elite+dangerous&ie=UTF-8&oe=UTF-8&gfe_rd=cr&ei=nDmJVuKyBaSA7QbA5pjoAg#q=.vap+for+t-flight+site:forums.frontier.co.uk
+    *.pdf ?
 
 *) If we have Q Auth details then delay channel join until after auth (or some timer?).
 

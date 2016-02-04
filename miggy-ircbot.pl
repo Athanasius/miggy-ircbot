@@ -154,7 +154,11 @@ sub _start {
     MiggyIRCBot::URLParse->new(
       youtube_api_key => $config->getconf('youtube_api_key'),
       imgur_clientid => $config->getconf('imgur_clientid'),
-      imgur_clientsecret => $config->getconf('imgur_clientsecret')
+      imgur_clientsecret => $config->getconf('imgur_clientsecret'),
+      reddit_username => $config->getconf('reddit_username'),
+      reddit_password => $config->getconf('reddit_password'),
+      reddit_clientid => $config->getconf('reddit_clientid'),
+      reddit_secret => $config->getconf('reddit_secret'),
     )
   );
 

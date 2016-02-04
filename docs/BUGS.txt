@@ -21,3 +21,34 @@ yet actually read everything.
 So, POE bug?  Perl bug?  Linux bug?  Oh! Could it be the SSL layer getting
 in the way?  sysread() at the level we're using it is getting plain-text,
 but the actual read(2) call will be seeing the encrypted data.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Reported as:
+<https://rt.cpan.org/Public/Bug/Display.html?id=111425>
+<https://rt.cpan.org/Public/Bug/Display.html?id=58243>
+
+Option 1)
+  Specify a custom Driver, based on POE::Driver::SysRW, but set to drain
+  the filehandle on each invocation.  This runs the risk of there being a lot
+  of data to read on each invocation, blocking the rest of the POE
+  application whilst it does so.
+  It would still only be triggered by the SSL socket showing as ready to
+  read, as now.
+
+  Advantage to this is it's a fairly simple change, writing the new driver
+  module and using it instead in POE::Component::Client::HTTP
+  poco_weeble_connect_done() .  Would also need to document this whole issue
+  and the necessary workaround in the SSLify module.
+
+Option 2)
+  Find some way to select on BOTH the SSL socket and the plaintext one and
+  then only invoke the ->get() method when at least one shows ready.
+    In the case of only the SSL socket showing ready a sysread() as now
+  should poke the underlying SSL code to read from the socket and give data.
+  In the case of only the plaintext socket showing as ready we would read
+  another chunk of pre-decrypted plaintext.
+
+  Disadvantage is we'd have tentacles due to SSLify in more POE code (there
+  already is some in POE::Component::Client::HTTP and
+  POE::Component::Client::Keepalive).
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
