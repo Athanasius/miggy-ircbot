@@ -2,6 +2,7 @@
 # vim: textwidth=0 wrapmargin=0 shiftwidth=2 tabstop=2 expandtab
 
 use strict;
+use open qw{:std :utf8};
 
 use POE;
 use POE::Component::IRC::Qnet::State;
