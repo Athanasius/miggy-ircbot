@@ -444,6 +444,7 @@ printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'data'}{'error'};
       } elsif (defined($json->{'data'})) {
 #printf STDERR "PARSE_IMGUR_IMAGE: success == true\n";
+#printf STDERR "PARSE_IMGUR_IMAGE: Content: '%s'\n", Dumper($json);
         my $d = $json->{'data'};
         my $blurb = "[ Imgur Image ] - ";
         if (defined($d->{'title'})) {
@@ -457,13 +458,23 @@ printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         if (defined($d->{'animated'}) and $d->{'animated'} eq 'true') {
           $blurb .= " | *ANIMATED*";
         }
+        if (defined($d->{'description'})) {
+          $blurb .= " | Description: " . trunc_str($d->{'description'}, 256);
+        }
+        if (defined($d->{'account_url'})) {
+          $blurb .= " | User: " . $d->{'account_url'};
+        }
+        if (defined($d->{'views'})) {
+          $blurb .= " | Views: " . $d->{'views'};
+        }
         if (defined($d->{'size'})) {
           $blurb .= " | Size: " . prettyprint($d->{'size'});
         }
-        $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
-        $blurb .= " | Views: " . $d->{'views'};
         if (defined($d->{'section'}) and $d->{'section'} ne "") {
           $blurb .= " | Section: " . $d->{'section'};
+        }
+        if (defined($d->{'datetime'})) {
+          $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
         }
 #printf STDERR "PARSE_IMGUR_IMAGE: pushing blurb\n";
         push @params, 'irc_miggybot_url_success', $args, $blurb;
@@ -531,19 +542,26 @@ printf STDERR "PARSE_IMGUR_ALBUM: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         } else {
           $blurb .= "<no title>";
         }
-        if (defined($d->{'account_url'}) and $d->{'account_url'} ne 'null') {
-          $blurb .= " | User: " . $d->{'account_url'};
-        }
         if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
           $blurb .= " | *NSFW* ";
+        }
+        if (defined($d->{'description'})) {
+          $blurb .= " | Description: " . trunc_str($d->{'description'}, 256);
+        }
+        if (defined($d->{'account_url'})) {
+          $blurb .= " | User: " . $d->{'account_url'};
         }
         if (defined($d->{'images_count'})) {
           $blurb .= " | # Images: " . prettyprint($d->{'images_count'});
         }
-        $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
-        $blurb .= " | Views: " . $d->{'views'};
+        if (defined($d->{'views'})) {
+          $blurb .= " | Views: " . $d->{'views'};
+        }
         if (defined($d->{'section'}) and $d->{'section'} ne "") {
           $blurb .= " | Section: " . $d->{'section'};
+        }
+        if (defined($d->{'datetime'})) {
+          $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
         }
 #printf STDERR "PARSE_IMGUR_ALBUM: pushing blurb\n";
         push @params, 'irc_miggybot_url_success', $args, $blurb;
@@ -607,7 +625,7 @@ printf STDERR "PARSE_IMGUR_GALLERY: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-E
         my $d = $json->{'data'};
         my $blurb = "[ Imgur Gallery ] - ";
         if (defined($d->{'title'})) {
-          $blurb .= "Title: " . trunc_str($d->{'title'});
+          $blurb .= "Title: " . trunc_str($d->{'title'}, 256);
         } else {
           $blurb .= "<no title>";
         }
@@ -617,13 +635,20 @@ printf STDERR "PARSE_IMGUR_GALLERY: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-E
         if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
           $blurb .= " | *NSFW* ";
         }
+        if (defined($d->{'description'})) {
+          $blurb .= " | Description: " . trunc_str($d->{'description'}, 256);
+        }
         if (defined($d->{'images_count'})) {
           $blurb .= " | # Images: " . prettyprint($d->{'images_count'});
         }
-        $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
-        $blurb .= " | Views: " . $d->{'views'};
+        if (defined($d->{'views'})) {
+          $blurb .= " | Views: " . $d->{'views'};
+        }
         if (defined($d->{'section'}) and $d->{'section'} ne "") {
           $blurb .= " | Section: " . $d->{'section'};
+        }
+        if (defined($d->{'datetime'})) {
+          $blurb .= " | Published: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($d->{'datetime'}));
         }
 #printf STDERR "PARSE_IMGUR_GALLERY: pushing blurb\n";
         push @params, 'irc_miggybot_url_success', $args, $blurb;
