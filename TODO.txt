@@ -39,6 +39,7 @@ Vital to making bot more generic and easier to configure.
     https://vimeo.com/62554105
     gfycat.com
       https://gfycat.com/api
+    https://49.media.tumblr.com/1481e08190f5a3428fb9a65c3e8c8f53/tumblr_np9sfgPtgT1tcjz2ao1_400.gif
     Facebook?
     imgflip.com
     dropbox.com
