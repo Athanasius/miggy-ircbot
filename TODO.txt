@@ -2,6 +2,7 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
+*) Config file to change "Reporting for duty" message
 *) RSS on Community Site occasionally throws up old articles in tt-rss, beware!
 *) Config file for simple "say this" bot commands. FAQ module ?
 *) On the fly reloading of modules.
