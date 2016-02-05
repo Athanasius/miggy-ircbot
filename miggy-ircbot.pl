@@ -246,15 +246,15 @@ sub irc_botcmd_rss {
 
   if (defined($arg)) {
     if ($arg eq "latest") {
-      $kernel->yield('get_rss_latest', { _reply_to => (split /!/, $_[ARG0])[0], session => $session, quiet => 0 } );
+      $kernel->yield('get_rss_latest', { _reply_to => $nick, session => $session, quiet => 0 } );
     }
   } else {
-    unless ($poco->is_channel_operator($channel, $nick)
-      or $poco->has_channel_voice($channel, $nick)) {
+    unless ($poco->is_channel_operator($config->getconf('channel'), $nick)
+      or $poco->has_channel_voice($config->getconf('channel'), $nick)) {
       return;
     }
-    $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
-    $kernel->yield('get_rss_items', { _reply_to => $channel, session => $session, quiet => 0 } );
+    $irc->yield('privmsg', $nick, "Running RSS query, please wait ...");
+    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), session => $session, quiet => 0 } );
   }
 }
 
