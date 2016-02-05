@@ -234,7 +234,7 @@ printf STDERR "irc_public/action: parsed '\n%s\n' from '\n%s\n', passing to get_
 sub handle_rss_check {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 1 } );
 
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 }
@@ -254,20 +254,21 @@ sub irc_botcmd_rss {
       return;
     }
     $irc->yield('privmsg', $nick, "Running RSS query, please wait ...");
-    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), session => $session, quiet => 0 } );
+    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), _errors_to => $nick, session => $session, quiet => 0 } );
   }
 }
 
 sub irc_miggybot_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $reply_to = delete $args->{_reply_to};
+  my $errors_to = delete $args->{_errors_to};
 
   if (defined($_[ARG1])) {
     for my $i (@_[ARG1..$#_]) {
       $irc->yield('privmsg', $reply_to, 'New from RSS: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
     }
   } elsif (! $args->{quiet}) {
-      $irc->yield('privmsg', $reply_to, 'No new RSS items at this time');
+      $irc->yield('privmsg', $errors_to, 'No new RSS items at this time');
   }
 }
 
