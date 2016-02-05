@@ -70,11 +70,11 @@ sub _start {
           aliases => [ 'commsite', 'community' ]
         },
       },
-      In_channels => 1,
+      In_channels => 0,
       Addressed => 0,
       Prefix => '!',
       Method => 'privmsg',
-      Ignore_unknown => 1,
+      Ignore_unknown => 0,
       Eat => 1,
     )
   );
@@ -246,7 +246,7 @@ sub irc_botcmd_rss {
 
   if (defined($arg)) {
     if ($arg eq "latest") {
-      $kernel->yield('get_rss_latest', { _channel => $channel, session => $session, quiet => 0 } );
+      $kernel->yield('get_rss_latest', { _reply_to => (split /!/, $_[ARG0])[0], session => $session, quiet => 0 } );
     }
   } else {
     unless ($poco->is_channel_operator($channel, $nick)
@@ -254,40 +254,40 @@ sub irc_botcmd_rss {
       return;
     }
     $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
-    $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
+    $kernel->yield('get_rss_items', { _reply_to => $channel, session => $session, quiet => 0 } );
   }
 }
 
 sub irc_miggybot_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
-  my $channel = delete $args->{_channel};
+  my $reply_to = delete $args->{_reply_to};
 
   if (defined($_[ARG1])) {
     for my $i (@_[ARG1..$#_]) {
-      $irc->yield('privmsg', $channel, 'New from RSS: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
+      $irc->yield('privmsg', $reply_to, 'New from RSS: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
     }
   } elsif (! $args->{quiet}) {
-      $irc->yield('privmsg', $channel, 'No new RSS items at this time');
+      $irc->yield('privmsg', $reply_to, 'No new RSS items at this time');
   }
 }
 
 sub irc_miggybot_rss_latest {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
-  my $channel = delete $args->{_channel};
+  my $reply_to = delete $args->{_reply_to};
 
 printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
   for my $i (@_[ARG1..$#_]) {
-#printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
-    $irc->yield('privmsg', $channel, 'Latest RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
+printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
+    $irc->yield('privmsg', $reply_to, 'Latest RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
 }
 
 sub irc_miggybot_rss_error {
   my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
-  my $channel = delete $args->{_channel};
+  my $reply_to = delete $args->{_reply_to};
 
 mylog("irc_miggybot_rss_error...");
-  $irc->yield('privmsg', $channel, "RSS Error: " . $error);
+  $irc->yield('privmsg', $reply_to, "RSS Error: " . $error);
 }
 ###########################################################################
 
@@ -323,7 +323,7 @@ sub irc_botcmd_youtube {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Frontier Developments' YouTube channel is at: https://www.youtube.com/user/FrontierDevelopments");
+  $irc->yield('privmsg', $nick, "Frontier Developments' YouTube channel is at: https://www.youtube.com/user/FrontierDevelopments");
 }
 # Twitch.TV
 sub irc_botcmd_twitch {
@@ -331,14 +331,14 @@ sub irc_botcmd_twitch {
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "Frontier Developments' Twitch.TV channel is at: http://www.twitch.tv/frontierdev");
+  $irc->yield('privmsg', $nick, "Frontier Developments' Twitch.TV channel is at: http://www.twitch.tv/frontierdev");
 }
 sub irc_botcmd_community_site {
   my ($kernel, $session, $sender, $channel, $url) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
 
-  $irc->yield('privmsg', $channel, "The (still beta?) Elite Dangerous Community site can be found at: https://community.elitedangerous.com/");
+  $irc->yield('privmsg', $nick, "The (still beta?) Elite Dangerous Community site can be found at: https://community.elitedangerous.com/");
 }
 ###########################################################################
 

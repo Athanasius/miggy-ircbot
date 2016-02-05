@@ -202,7 +202,7 @@ sub _get_rss_latest {
   my @params;
   push @params, $args{session};
 
-  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 1");
+  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 10");
 #printf STDERR "_GET_RSS_LATEST: Executing query\n";
   my $res = $sth->execute();
   while (my $row = $sth->fetchrow_hashref) {
@@ -210,7 +210,8 @@ sub _get_rss_latest {
     push @params, 'irc_miggybot_rss_latest', \%args;
     push @params, $row;
     $kernel->post( @params );
-    return;
+    undef @params;
+    @params, $args{session};
   }
   # else
 printf STDERR "_GET_RSS_LATEST: No data?\n";
