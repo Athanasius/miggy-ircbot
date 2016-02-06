@@ -10,3 +10,8 @@ qpass: Some Q Password
 youtube_api_key: See <https://developers.google.com/youtube/v3/getting-started>
 imgur_clientid: See <https://api.imgur.com/endpoints>
 imgur_clientsecret: See <https://api.imgur.com/endpoints>
+reddit_clientid: See <https://github.com/reddit/reddit/wiki/OAuth2>
+reddit_secret: See <https://github.com/reddit/reddit/wiki/OAuth2>
+reddit_username: See <https://github.com/reddit/reddit/wiki/OAuth2>
+reddit_password: See <https://github.com/reddit/reddit/wiki/OAuth2>
+twitchtv_clientid: See <https://github.com/justintv/Twitch-API/blob/master/authentication.md>

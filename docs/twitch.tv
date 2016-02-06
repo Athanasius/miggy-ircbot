@@ -1,0 +1,127 @@
+curl -H 'Accept: application/vnd.twitchtv.3+json' -H 'Client-ID: <insert id>' https://api.twitch.tv/kraken/streams/jonnyve | json_xs
+
+if NOT streaming you'll get something like:
+{
+   "_links" : {
+      "self" : "https://api.twitch.tv/kraken/streams/cmdr_artysu",
+      "channel" : "https://api.twitch.tv/kraken/channels/cmdr_artysu"
+   },
+   "stream" : null
+}
+
+if they ARE streaming then:
+
+{
+   "_links" : {
+      "self" : "https://api.twitch.tv/kraken/streams/jonnyve",
+      "channel" : "https://api.twitch.tv/kraken/channels/jonnyve"
+   },
+   "stream" : {
+      "_links" : {
+         "self" : "https://api.twitch.tv/kraken/streams/jonnyve"
+      },
+      "_id" : 19396985216,
+      "delay" : 0,
+      "channel" : {
+         "_links" : {
+            "stream_key" : "http://api.twitch.tv/kraken/channels/jonnyve/stream_key",
+            "features" : "http://api.twitch.tv/kraken/channels/jonnyve/features",
+            "teams" : "http://api.twitch.tv/kraken/channels/jonnyve/teams",
+            "commercial" : "http://api.twitch.tv/kraken/channels/jonnyve/commercial",
+            "follows" : "http://api.twitch.tv/kraken/channels/jonnyve/follows",
+            "self" : "http://api.twitch.tv/kraken/channels/jonnyve",
+            "chat" : "http://api.twitch.tv/kraken/chat/jonnyve",
+            "subscriptions" : "http://api.twitch.tv/kraken/channels/jonnyve/subscriptions",
+            "videos" : "http://api.twitch.tv/kraken/channels/jonnyve/videos",
+            "editors" : "http://api.twitch.tv/kraken/channels/jonnyve/editors"
+         },
+         "_id" : 114097957,
+         "status" : "20Weeks, 2Days, 23Hours, 18mins Played, Python",
+         "delay" : null,
+         "profile_banner_background_color" : "#0b0000",
+         "views" : 96,
+         "created_at" : "2016-01-28T08:10:42Z",
+         "url" : "http://www.twitch.tv/jonnyve",
+         "followers" : 9,
+         "broadcaster_language" : "en",
+         "banner" : null,
+         "mature" : false,
+         "language" : "en",
+         "name" : "jonnyve",
+         "background" : null,
+         "display_name" : "JonnyVe",
+         "logo" : "https://static-cdn.jtvnw.net/jtv_user_pictures/jonnyve-profile_image-895d646c37f504d9-300x300.jpeg",
+         "game" : "Elite: Dangerous",
+         "updated_at" : "2016-02-06T13:24:27Z",
+         "video_banner" : null,
+         "partner" : false,
+         "profile_banner" : "https://static-cdn.jtvnw.net/jtv_user_pictures/jonnyve-profile_banner-51bd0fd43f3b6ae9-480.png"
+      },
+      "created_at" : "2016-02-06T11:47:03Z",
+      "is_playlist" : false,
+      "preview" : {
+         "large" : "http://static-cdn.jtvnw.net/previews-ttv/live_user_jonnyve-640x360.jpg",
+         "small" : "http://static-cdn.jtvnw.net/previews-ttv/live_user_jonnyve-80x45.jpg",
+         "template" : "http://static-cdn.jtvnw.net/previews-ttv/live_user_jonnyve-{width}x{height}.jpg",
+         "medium" : "http://static-cdn.jtvnw.net/previews-ttv/live_user_jonnyve-320x180.jpg"
+      },
+      "game" : "Elite: Dangerous",
+      "viewers" : 1,
+      "average_fps" : 60.6666666667,
+      "video_height" : 720
+   }
+}
+
+And a get on the channels should give:
+
+{
+   "_links" : {
+      "stream_key" : "https://api.twitch.tv/kraken/channels/jonnyve/stream_key",
+      "features" : "https://api.twitch.tv/kraken/channels/jonnyve/features",
+      "teams" : "https://api.twitch.tv/kraken/channels/jonnyve/teams",
+      "commercial" : "https://api.twitch.tv/kraken/channels/jonnyve/commercial",
+      "follows" : "https://api.twitch.tv/kraken/channels/jonnyve/follows",
+      "self" : "https://api.twitch.tv/kraken/channels/jonnyve",
+      "chat" : "https://api.twitch.tv/kraken/chat/jonnyve",
+      "subscriptions" : "https://api.twitch.tv/kraken/channels/jonnyve/subscriptions",
+      "videos" : "https://api.twitch.tv/kraken/channels/jonnyve/videos",
+      "editors" : "https://api.twitch.tv/kraken/channels/jonnyve/editors"
+   },
+   "_id" : 114097957,
+   "status" : "20Weeks, 2Days, 23Hours, 18mins Played, Python",
+   "delay" : null,
+   "profile_banner_background_color" : "#0b0000",
+   "views" : 96,
+   "created_at" : "2016-01-28T08:10:42Z",
+   "url" : "http://www.twitch.tv/jonnyve",
+   "followers" : 9,
+   "broadcaster_language" : "en",
+   "banner" : null,
+   "mature" : false,
+   "language" : "en",
+   "name" : "jonnyve",
+   "background" : null,
+   "display_name" : "JonnyVe",
+   "logo" : "https://static-cdn.jtvnw.net/jtv_user_pictures/jonnyve-profile_image-895d646c37f504d9-300x300.jpeg",
+   "game" : "Elite: Dangerous",
+   "updated_at" : "2016-02-06T13:24:27Z",
+   "video_banner" : null,
+   "partner" : false,
+   "profile_banner" : "https://static-cdn.jtvnw.net/jtv_user_pictures/jonnyve-profile_banner-51bd0fd43f3b6ae9-480.png"
+}
+
+So:
+
+GetStream(<callback>);
+
+ParseStream() {
+  If (IsStreaming) {
+    extract and report info;
+  } else {
+    GetChannel(<callback>);
+  }
+}
+
+ParseChannel() {
+  extract and report info;
+}
