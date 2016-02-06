@@ -54,7 +54,6 @@ printf STDERR "MiggyIRCBot::URLParse->new()\n";
   ($imgur_clientid, $imgur_clientsecret) = ($args{'imgur_clientid'}, $args{'imgur_clientsecret'});
   ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password) = ($args{'reddit_clientid'}, $args{'reddit_secret'}, $args{'reddit_username'}, $args{'reddit_password'});
   $twitchtv_clientid = $args{'twitchtv_clientid'};
-printf STDERR "MiggyIRCBot::URLParse->new(): \$twitchtv_clientid is %s\n", $twitchtv_clientid;
 
 	return $self;
 }
@@ -78,7 +77,7 @@ sub PCI_register {
 
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album parse_imgur_gallery parse_twitch_tv_stream parse_twitch_tv_channel ) ],
+      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album parse_imgur_gallery parse_twitch_tv_stream parse_twitch_tv_channel parse_twitch_tv_video ) ],
     ],
   )->ID();
   $poe_kernel->state( 'get_url', $self );
@@ -756,7 +755,7 @@ sub get_twitch_tv {
   my ($kernel, $self, $args) = @_;
 #printf STDERR "GET_TWITCH_TV\n";
 
-  my (undef, $channel_name) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/(.+)$/;
+  my (undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)(\/dashboard)?$/;
 #printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
   if ($twitchtv_clientid and $channel_name) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $channel_name;
@@ -764,6 +763,13 @@ printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $chann
 #printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
     $args->{'_channel_name'} = $channel_name;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
+  } elsif ((undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)\/(.+)\/([0-9]+)$/) {
+printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $video_pre, $video_id;
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+    $args->{'_channel_name'} = $channel_name;
+    $args->{'_video_pre'} = $video_pre;
+    $args->{'_video_id'} = $video_id;
+    $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_video', $req, $args );
   } else {
 printf STDERR "GET_TWITCH_TV, NOT just using scraping for '%s', no output\n", $args->{'url'};
   }
@@ -867,6 +873,52 @@ printf STDERR "PARSE_TWITCH_TV_CHANNEL: error!\n";
   undef;
 }
 
+sub parse_twitch_tv_video {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+#printf STDERR "PARSE_TWITCH_TV_VIDEO\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_TWITCH_TV_VIDEO: res != success: $res->status_line\n";
+printf STDERR "PARSE_TWITCH_TV_VIDEO: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+#printf STDERR "PARSE_TWITCH_TV_VIDEO: Content: '%s'\n", $res->content;
+    my $json = decode_json($res->content);
+    if (!defined($json)) {
+#printf STDERR "PARSE_TWITCH_TV_VIDEO: No JSON?\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+#printf STDERR "PARSE_TWITCH_TV_VIDEO: Got JSON?\n";
+      if (defined($json->{'error'})) {
+printf STDERR "PARSE_TWITCH_TV_VIDEO: error!\n";
+        push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'message'};
+      } else {
+#printf STDERR "PARSE_TWITCH_TV_VIDEO: success == true\n";
+#printf STDERR "PARSE_TWITCH_TV_VIDEO: Content: '%s'\n", Dumper($json);
+        my $blurb = "[ Twitch.TV ] - " . $json->{'channel'}->{'display_name'} . " (Saved Video)";
+        my $more_blurb .= make_twitch_tv_blurb($json, $args);
+        if (defined($more_blurb)) {
+          push @params, 'irc_miggybot_url_success', $args, $blurb . $more_blurb;
+          $kernel->post(@params);
+        }
+      }
+    }
+  }
+
+  undef;
+}
+
 sub make_twitch_tv_blurb {
   my ($d) = @_;
   my $blurb = undef;
@@ -876,14 +928,23 @@ sub make_twitch_tv_blurb {
     if (defined($d->{'game'})) {
       $blurb .= " | Game: " . $d->{'game'};
     }
-    if (defined($d->{'status'})) {
+    if (defined($d->{'title'})) {
+      $blurb .= " | Title: " . $d->{'title'};
+    }
+    if (defined($d->{'status'}) and $d->{'status'} ne "recorded") {
       $blurb .= " | Status: " . $d->{'status'};
+    }
+    if (defined($d->{'length'})) {
+      $blurb .= " | Duration: " . time_seconds_pretty($d->{'length'});
     }
     if (defined($d->{'views'})) {
       $blurb .= " | Views: " . $d->{'views'};
     }
     if (defined($d->{'followers'})) {
       $blurb .= " | Followers: " . $d->{'followers'};
+    }
+    if (defined($d->{'recorded_at'})) {
+      $blurb .= " | Recorded: " . iso8601_datetime_pretty($d->{'recorded_at'});
     }
   }
 
@@ -923,6 +984,32 @@ sub trunc_str {
   }
 
   return substr($line, 0, $len - 3) . "...";
+}
+
+sub time_seconds_pretty {
+  my $secs = shift;
+
+  my ($hours, $minutes, $seconds);
+
+  $hours = int($secs / 3600);
+  $secs -= $hours * 3600;
+
+  $minutes = int($secs / 60);
+  $secs -= $minutes * 60;
+
+  $seconds = $secs;
+
+  return sprintf("%02d:%02d:%02d", $hours, $minutes, $seconds);
+}
+
+sub iso8601_datetime_pretty {
+  my $ts = shift;
+
+  my $uts = str2time($ts, "UTC");
+  if (!defined($uts)) {
+    return $ts;
+  }
+  return strftime("%Y-%m-%d %H:%M:%S %Z", gmtime($uts));
 }
 
 sub mylog {
