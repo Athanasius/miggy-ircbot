@@ -25,13 +25,12 @@ Vital to making bot more generic and easier to configure.
 
     https://support.frontier.co.uk/kb/faq.php?id=185
     Twitch.TV
-      http://dev.twitch.tv/
-      https://www.twitch.tv/mercenarythorrn
-      http://www.twitch.tv/jonnyve
-      http://www.twitch.tv/jonnyve/dashboard
-      http://www.twitch.tv/l1nkdnat/c/5760523
-      http://www.twitch.tv/l1nkdnat/manager/highlights
-      http://www.twitch.tv/directory/game/Elite%3A%20Dangerous      
+      https://www.twitch.tv/mercenarythorrn DONE
+      http://www.twitch.tv/jonnyve DONE
+      http://www.twitch.tv/jonnyve/dashboard DONE
+      http://www.twitch.tv/l1nkdnat/c/5760523 DONE
+      http://www.twitch.tv/l1nkdnat/manager/highlights IGNORE
+      http://www.twitch.tv/directory/game/Elite%3A%20Dangerous       IGNORE
     www.flickr.com
       https://flic.kr/p/oPFhWK -> 302
       https://www.flickr.com/photos/8823090@N03/23728735744/in/dateposted-public/

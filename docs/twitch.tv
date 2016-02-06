@@ -125,3 +125,41 @@ ParseStream() {
 ParseChannel() {
   extract and report info;
 }
+
+
+A saved video has a URL like:
+<http://www.twitch.tv/l1nkdnat/c/5760523>
+
+and the API call is to:
+<https://api.twitch.tv/kraken/videos/c5760523>
+
+Note how c/5760523 becomes c5760523.
+
+{
+   "_links" : {
+      "self" : "https://api.twitch.tv/kraken/videos/c5760523",
+      "channel" : "https://api.twitch.tv/kraken/channels/l1nkdnat"
+   },
+   "_id" : "c5760523",
+   "tag_list" : "",
+   "status" : "recorded",
+   "channel" : {
+      "name" : "l1nkdnat",
+      "display_name" : "l1nkdnat"
+   },
+   "is_muted" : false,
+   "created_at" : "2014-12-27T20:51:23Z",
+   "views" : 2,
+   "broadcast_type" : "highlight",
+   "url" : "http://www.twitch.tv/l1nkdnat/c/5760523",
+   "resolutions" : null,
+   "thumbnails" : "https://static-cdn.jtvnw.net/jtv.thumbs/archive-603320756-320x240.jpg",
+   "recorded_at" : "2014-12-26T10:16:15Z",
+   "description" : "E:D Elite:Dangerous",
+   "broadcast_id" : 12342045088,
+   "length" : 12666,
+   "game" : null,
+   "preview" : "https://static-cdn.jtvnw.net/jtv.thumbs/archive-603320756-320x240.jpg",
+   "fps" : null,
+   "title" : "More Elite dangerous"
+}
