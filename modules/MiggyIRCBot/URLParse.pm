@@ -69,8 +69,8 @@ sub PCI_register {
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
-      # Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
+      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
+      #Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
       FollowRedirects => $self->{follow_redirects},
     );
   }
@@ -160,8 +160,7 @@ printf STDERR "_GET_URL: Recognised a %s site...\n", $site; #\t%s\n", $site, Dum
 sub get_generic {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-
-#printf STDERR "_GET_GENERIC\n";
+#printf STDERR "GET_GENERIC\n";
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
@@ -174,6 +173,7 @@ sub get_generic {
   # get your full response until it closes the connection.
   my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close']);
 mylog("_GET_GENERIC: '", $args{'url'}, "'");
+#printf STDERR "GET_GENERIC: req is:\n%s\n", $req->as_string();
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
   undef;
 }
@@ -188,10 +188,10 @@ sub _parse_url {
   my $res = $response->[0];
 
   if (! $res->is_success) {
-printf STDERR "_PARSE_URL: res != success: $res->status_line\n";
-printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+printf STDERR "_PARSE_URL: res != success: %s\n", $res->status_line;
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
       $error .= $+{'errornum'} . ": " . $+{'errorstr'};
     } else {
       $error .=  $res->status_line;
