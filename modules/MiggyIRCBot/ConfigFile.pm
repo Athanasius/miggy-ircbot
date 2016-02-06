@@ -7,6 +7,7 @@ our %config = (
   'ircserver' => 'irc.quakenet.org',
   'ircport' => 6667,
   'connect_delay' => 60,
+  'ready_message' => 'Reporting for duty!',
   'console_port' => 3337,
   'console_password' => 'UnwindLamps',
   'seen_filestore' => 'seen_filestore.db',
@@ -54,6 +55,8 @@ sub new {
       $config{'ircport'} = $1;
     } elsif (/^connect_delay:\s+(.*)$/i) {
       $config{'connect_delay'} = $1;
+    } elsif (/^ready_message:\s+(.*)$/i) {
+      $config{'ready_message'} = $1;
     } elsif (/^console_port:\s+(.*)$/i) {
       $config{'console_port'} = $1;
     } elsif (/^console_password:\s+(.*)$/i) {

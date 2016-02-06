@@ -205,7 +205,7 @@ sub irc_join {
   # only send the message if we were the one joining
   if ($nick eq $irc->nick_name()) {
     #print "irc_join - It's me! Sending greeting...\n";
-    $irc->yield(privmsg => $channel, 'Reporting for duty!');
+    $irc->yield(privmsg => $channel, $config->getconf('ready_message'));
   }
 }
 
