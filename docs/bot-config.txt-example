@@ -2,6 +2,7 @@ ircserver: some.irc.server
 ircport: 6667
 nickname: SomeBot
 channel: #SomeIRCChannel
+ready_message: Ready for action!
 console_port: 3337
 crowdfund_funds_check_time: 300
 rss_check_time: 900
