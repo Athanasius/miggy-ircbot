@@ -2,7 +2,7 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
-*) Config file to change "Reporting for duty" message
+*) !cgs command to display info about currently active CGs.
 *) RSS on Community Site occasionally throws up old articles in tt-rss, beware!
 *) Config file for simple "say this" bot commands. FAQ module ?
 *) On the fly reloading of modules.
@@ -60,6 +60,9 @@ Vital to making bot more generic and easier to configure.
     *.pdf ?
 
 *) If we have Q Auth details then delay channel join until after auth (or some timer?).
+*) Change "!rss latest" to inform the channel it's telling the user the latest
+  10 items in MSG/NOTICE. DONE
+*) Config file to change "Reporting for duty" message DONE
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Left over from ^Lumi^
