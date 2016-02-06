@@ -2,7 +2,9 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
+*) Track official server status, either using the launcher URL or http://www.edsm.net/api-status.
 *) !cgs command to display info about currently active CGs.
+  See: <http://hosting.zaonce.net/launcher/elite/en.html>
 *) RSS on Community Site occasionally throws up old articles in tt-rss, beware!
 *) Config file for simple "say this" bot commands. FAQ module ?
 *) On the fly reloading of modules.
