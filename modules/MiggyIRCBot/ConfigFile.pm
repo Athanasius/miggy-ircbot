@@ -90,6 +90,8 @@ sub new {
       $config{'reddit_password'} = $1;
     } elsif (/^reddit_authorization_redirect:\s+(.*)$/i) {
       $config{'reddit_authorization_redirect'} = $1;
+    } elsif (/^twitchtv_clientid:\s+(.*)$/i) {
+      $config{'twitchtv_clientid'} = $1;
     } else {
       printf STDERR "Unknown field in config file '%s', line %d : %s\n", $file, $line, $_;
     }

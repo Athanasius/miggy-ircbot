@@ -19,6 +19,7 @@ my $youtube_api_key;
 my ($imgur_clientid, $imgur_clientsecret);
 my ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password);
 my $reddit;
+my $twitchtv_clientid;
 my %sites = (
   '^http(s)?:\/\/www\.youtube\.com\/watch\?v=' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
   '^http(s)?:\/\/youtu\.be\/' => {get => \&get_youtube_com, parse => \&parse_youtube_com},
@@ -30,6 +31,7 @@ my %sites = (
   '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
   '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
+  '^http(s)?:\/\/www\.twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
 
 ## Ignores
   # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
@@ -47,10 +49,12 @@ sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
 
-#printf STDERR "MiggyIRCBot::URLParse->new()\n";
+printf STDERR "MiggyIRCBot::URLParse->new()\n";
   $youtube_api_key = $args{'youtube_api_key'};
   ($imgur_clientid, $imgur_clientsecret) = ($args{'imgur_clientid'}, $args{'imgur_clientsecret'});
   ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password) = ($args{'reddit_clientid'}, $args{'reddit_secret'}, $args{'reddit_username'}, $args{'reddit_password'});
+  $twitchtv_clientid = $args{'twitchtv_clientid'};
+printf STDERR "MiggyIRCBot::URLParse->new(): \$twitchtv_clientid is %s\n", $twitchtv_clientid;
 
 	return $self;
 }
@@ -74,7 +78,7 @@ sub PCI_register {
 
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album parse_imgur_gallery ) ],
+      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album parse_imgur_gallery parse_twitch_tv_stream parse_twitch_tv_channel ) ],
     ],
   )->ID();
   $poe_kernel->state( 'get_url', $self );
@@ -737,12 +741,153 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: does NOT match regex\n";
 ###########################################################################
 sub get_reddit_com {
   my ($kernel, $self, $args) = @_;
-  my @params;
-printf STDERR "GET_REDDIT_COM\n";
+#printf STDERR "GET_REDDIT_COM\n";
 
   $kernel->post('miggyircbot-reddit', 'get_reddit_url_info', $args);
 
   undef;
+}
+###########################################################################
+
+###########################################################################
+# twitch.tv
+###########################################################################
+sub get_twitch_tv {
+  my ($kernel, $self, $args) = @_;
+#printf STDERR "GET_TWITCH_TV\n";
+
+  my (undef, $channel_name) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/(.+)$/;
+#printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
+  if ($twitchtv_clientid and $channel_name) {
+printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $channel_name;
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/streams/" . $channel_name, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+#printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
+    $args->{'_channel_name'} = $channel_name;
+    $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
+  } else {
+printf STDERR "GET_TWITCH_TV, NOT just using scraping for '%s', no output\n", $args->{'url'};
+  }
+}
+
+sub parse_twitch_tv_stream {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+#printf STDERR "PARSE_TWITCH_TV_STREAM\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_TWITCH_TV_STREAM: res != success: $res->status_line\n";
+printf STDERR "PARSE_TWITCH_TV_STREAM: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+#printf STDERR "PARSE_TWITCH_TV_STREAM: Content: '%s'\n", $res->content;
+    my $json = decode_json($res->content);
+    if (!defined($json)) {
+#printf STDERR "PARSE_TWITCH_TV_STREAM: No JSON?\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+#printf STDERR "PARSE_TWITCH_TV_STREAM: Got JSON?\n";
+      if (defined($json->{'error'})) {
+printf STDERR "PARSE_TWITCH_TV_STREAM: error!\n";
+        push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'message'};
+      } elsif (!defined($json->{'stream'})) {
+printf STDERR "PARSE_TWITCH_TV_STREAM: No stream, offline?  Trying for channel info instead.\n";
+        my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/channels/" . $args->{'_channel_name'}, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+#printf STDERR "PARSE_TWITCH_TV_STREAM: channel req is:\n%s\n", $req->as_string();
+        $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_channel', $req, $args );
+        return undef;
+      } else {
+#printf STDERR "PARSE_TWITCH_TV_STREAM: success == true\n";
+#printf STDERR "PARSE_TWITCH_TV_STREAM: Content: '%s'\n", Dumper($json);
+        my $blurb = "[ Twitch.TV ] - " . $json->{'stream'}->{'channel'}->{'display_name'} . " *LIVE*";
+        my $more_blurb .= make_twitch_tv_blurb($json->{'stream'}->{'channel'});
+        if (defined($more_blurb)) {
+          push @params, 'irc_miggybot_url_success', $args, $blurb . $more_blurb;
+          $kernel->post(@params);
+        }
+      }
+    }
+  }
+
+  undef;
+}
+
+sub parse_twitch_tv_channel {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+#printf STDERR "PARSE_TWITCH_TV_CHANNEL\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_TWITCH_TV_CHANNEL: res != success: $res->status_line\n";
+printf STDERR "PARSE_TWITCH_TV_CHANNEL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+#printf STDERR "PARSE_TWITCH_TV_CHANNEL: Content: '%s'\n", $res->content;
+    my $json = decode_json($res->content);
+    if (!defined($json)) {
+#printf STDERR "PARSE_TWITCH_TV_CHANNEL: No JSON?\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+#printf STDERR "PARSE_TWITCH_TV_CHANNEL: Got JSON?\n";
+      if (defined($json->{'error'})) {
+printf STDERR "PARSE_TWITCH_TV_CHANNEL: error!\n";
+        push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'message'};
+      } else {
+#printf STDERR "PARSE_TWITCH_TV_CHANNEL: success == true\n";
+#printf STDERR "PARSE_TWITCH_TV_CHANNEL: Content: '%s'\n", Dumper($json);
+        my $blurb = "[ Twitch.TV ] - " . $json->{'display_name'} . " (offline)";
+        my $more_blurb .= make_twitch_tv_blurb($json, $args);
+        if (defined($more_blurb)) {
+          push @params, 'irc_miggybot_url_success', $args, $blurb . $more_blurb;
+          $kernel->post(@params);
+        }
+      }
+    }
+  }
+
+  undef;
+}
+
+sub make_twitch_tv_blurb {
+  my ($d) = @_;
+  my $blurb = undef;
+
+  if (defined($d->{'status'}) or defined($d->{'game'})) {
+    $blurb = "";
+    if (defined($d->{'game'})) {
+      $blurb .= " | Game: " . $d->{'game'};
+    }
+    if (defined($d->{'status'})) {
+      $blurb .= " | Status: " . $d->{'status'};
+    }
+    if (defined($d->{'views'})) {
+      $blurb .= " | Views: " . $d->{'views'};
+    }
+    if (defined($d->{'followers'})) {
+      $blurb .= " | Followers: " . $d->{'followers'};
+    }
+  }
+
+  return $blurb;
 }
 ###########################################################################
 

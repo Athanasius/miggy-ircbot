@@ -160,6 +160,7 @@ sub _start {
       reddit_password => $config->getconf('reddit_password'),
       reddit_clientid => $config->getconf('reddit_clientid'),
       reddit_secret => $config->getconf('reddit_secret'),
+      twitchtv_clientid => $config->getconf('twitchtv_clientid'),
     )
   );
 
