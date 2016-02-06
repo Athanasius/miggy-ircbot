@@ -3,9 +3,14 @@ Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
 *) Track official server status, either using the launcher URL or http://www.edsm.net/api-status.
+  <http://hosting.zaonce.net/launcher-status/status.json>
 *) !cgs command to display info about currently active CGs.
   See: <http://hosting.zaonce.net/launcher/elite/en.html>
 *) RSS on Community Site occasionally throws up old articles in tt-rss, beware!
+  Example: https://community.elitedangerous.com/node/381 keeps showing up today
+  Sat Feb  6 17:04:14 GMT 2016
+  Feed URL: https://community.elitedangerous.com/taxonomy/term/6/feed
+  NB: I do/did have "Mark updated articles as unread" ticked.
 *) Config file for simple "say this" bot commands. FAQ module ?
 *) On the fly reloading of modules.
 *) Per site URL parsing to pull extra information or cope with the blurb we
