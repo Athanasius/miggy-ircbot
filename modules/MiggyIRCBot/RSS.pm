@@ -41,7 +41,8 @@ sub PCI_register {
     $self->{follow_redirects} ||= 2;
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
-      Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
+      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
+      #Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
       Timeout         => 30,
       FollowRedirects => $self->{follow_redirects},
     );
