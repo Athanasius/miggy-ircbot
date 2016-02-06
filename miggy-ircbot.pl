@@ -278,10 +278,12 @@ sub irc_miggybot_rss_latest {
   my $reply_to = delete $args->{_reply_to};
 
 printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
+  $irc->yield('privmsg', $reply_to, 'The latest 10 RSS items follow...');
   for my $i (@_[ARG1..$#_]) {
 printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
-    $irc->yield('privmsg', $reply_to, 'Latest RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
+    $irc->yield('privmsg', $reply_to, 'RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
+  $irc->yield('privmsg', $reply_to, 'End of latest 10 RSS items.');
 }
 
 sub irc_miggybot_rss_error {
