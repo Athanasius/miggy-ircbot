@@ -71,6 +71,10 @@ printf STDERR "_GET_REDDIT_AUTH_TOKEN\n";
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
+  if (defined($args{'_requested_auth'}) and $args{'_requested_auth'} == 1) {
+    $kernel->post($self->{'session_id'}, 'irc_miggybot_url_error', \%args, "No reddit Auth Token, and we've already tried!");
+    return undef;
+  }
   $heap->{reddit_url} = $args{'url'};
   $heap->{_channel} = $args{'_channel'};
   my $h = HTTP::Headers->new;
@@ -110,6 +114,7 @@ printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: X-PCCH-Errmsg: %s\n", $res->header('X-P
         push @params, 'irc_miggybot_url_error', $args, "Reddit Auth Token response was JSON, but no access_token";
       } else {
         $reddit_token = $json->{'access_token'};
+        $args->{'_requested_auth'} = 0;
 printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: token is now '%s'\n", $reddit_token;
         my %args = ( url => $heap->{'reddit_url'}, _channel => $heap->{'_channel'} );
         my @args;
@@ -182,15 +187,20 @@ printf STDERR "_PARSE_REDDIT_URL_INFO\n";
   my $res = $response->[0];
 
   if (! $res->is_success) {
-printf STDERR "_PARSE_REDDIT_URL_INFO: res != success: $res->status_line\n";
+printf STDERR "_PARSE_REDDIT_URL_INFO: res != success: %s\n", $res->status_line;
 printf STDERR "_PARSE_REDDIT_URL_INFO: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
-    my $error = "Failed to parse Reddit API response: ";
-    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
-      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    if ($res->status_line eq "401 Unauthorized") {
+      $args->{'_requested_auth'} = 1;
+      $kernel->post( $self->{session_id}, '_get_reddit_auth_token', $args );
     } else {
-      $error .=  $res->status_line;
+      my $error = "Failed to parse Reddit API response: ";
+      if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+       $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+      } else {
+       $error .=  $res->status_line;
+      }
+      push @params, 'irc_miggybot_url_error', $args, $error;
     }
-    push @params, 'irc_miggybot_url_error', $args, $error;
   } else {
 #printf STDERR "_PARSE_REDDIT_URL_INFO: res == success\n";
     if ($res->header('Content-Type') =~ /application\/json/) {
