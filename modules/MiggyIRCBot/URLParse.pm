@@ -296,9 +296,6 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         my $blurb = "[ YouTube ] Title: " . trunc_str($v->{'snippet'}{'title'}, 256);
         $blurb .= " | Uploader: " . $v->{'snippet'}{'channelTitle'};
         my $pub_timet = str2time($v->{'snippet'}{'publishedAt'});
-        if (defined($pub_timet)) {
-          $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
-        }
         if (defined($v->{'contentDetails'}{'duration'})) {
           $blurb .= youtube_parse_duration($v->{'contentDetails'}{'duration'});
         }
@@ -313,6 +310,9 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         }
         if (defined($v->{'statistics'}{'dislikeCount'})) {
           $blurb .= " | Dislikes: " . prettyprint($v->{'statistics'}{'dislikeCount'});
+        }
+        if (defined($pub_timet)) {
+          $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
         }
 #printf STDERR "PARSE_YOUTUBE_API pushing blurb to params\n";
         push @params, 'irc_miggybot_url_success', $args, $blurb;
