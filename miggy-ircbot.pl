@@ -94,7 +94,7 @@ sub _start {
           aliases => [ 'tftc' ],
         },
       },
-      In_channels => 0,
+      In_channels => 1,
       Addressed => 0,
       Prefix => '!',
       Method => 'privmsg',
@@ -335,15 +335,15 @@ sub irc_botcmd_rss {
 
   if (defined($arg)) {
     if ($arg eq "latest") {
-      $kernel->yield('get_rss_latest', { _reply_to => $nick, session => $session, quiet => 0 } );
+      $kernel->yield('get_rss_latest', { _reply_to => $channel, session => $session, quiet => 0 } );
     }
   } else {
     unless ($poco->is_channel_operator($config->getconf('channel'), $nick)
       or $poco->has_channel_voice($config->getconf('channel'), $nick)) {
       return;
     }
-    $irc->yield('privmsg', $nick, "Running RSS query, please wait ...");
-    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), _errors_to => $nick, session => $session, quiet => 0 } );
+    $irc->yield('privmsg', $config->getconf('channel'), "Running RSS query, please wait ...");
+    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 0 } );
   }
 }
 
@@ -354,10 +354,10 @@ sub irc_miggybot_rss_newitems {
 
   if (defined($_[ARG1])) {
     for my $i (@_[ARG1..$#_]) {
-      $irc->yield('privmsg', $channel, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
+      $irc->yield('privmsg', $reply_to, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
     }
   } elsif (! $args->{quiet}) {
-      $irc->yield('privmsg', $channel, 'No new Comm-links at this time');
+      $irc->yield('privmsg', $errors_to, 'No new Comm-links at this time');
   }
 }
 
