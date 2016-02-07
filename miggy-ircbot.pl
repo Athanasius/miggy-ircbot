@@ -94,11 +94,11 @@ sub _start {
           aliases => [ 'tftc' ],
         },
       },
-      In_channels => 1,
+      In_channels => 0,
       Addressed => 0,
       Prefix => '!',
       Method => 'privmsg',
-      Ignore_unknown => 1,
+      Ignore_unknown => 0,
       Eat => 1,
     )
   );
@@ -323,7 +323,7 @@ mylog("irc_sc_crowdfund_error...");
 sub handle_rss_check {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), session => $session, quiet => 1 } );
+  $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 1 } );
 
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 }
@@ -335,21 +335,22 @@ sub irc_botcmd_rss {
 
   if (defined($arg)) {
     if ($arg eq "latest") {
-      $kernel->yield('get_rss_latest', { _channel => $channel, session => $session, quiet => 0 } );
+      $kernel->yield('get_rss_latest', { _reply_to => $nick, session => $session, quiet => 0 } );
     }
   } else {
-    unless ($poco->is_channel_operator($channel, $nick)
-      or $poco->has_channel_voice($channel, $nick)) {
+    unless ($poco->is_channel_operator($config->getconf('channel'), $nick)
+      or $poco->has_channel_voice($config->getconf('channel'), $nick)) {
       return;
     }
-    $irc->yield('privmsg', $channel, "Running RSS query, please wait ...");
-    $kernel->yield('get_rss_items', { _channel => $channel, session => $session, quiet => 0 } );
+    $irc->yield('privmsg', $nick, "Running RSS query, please wait ...");
+    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), _errors_to => $nick, session => $session, quiet => 0 } );
   }
 }
 
 sub irc_miggybot_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
-  my $channel = delete $args->{_channel};
+  my $reply_to = delete $args->{_reply_to};
+  my $errors_to = delete $args->{_errors_to};
 
   if (defined($_[ARG1])) {
     for my $i (@_[ARG1..$#_]) {
@@ -362,21 +363,23 @@ sub irc_miggybot_rss_newitems {
 
 sub irc_miggybot_rss_latest {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
-  my $channel = delete $args->{_channel};
+  my $reply_to = delete $args->{_reply_to};
 
 printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
+  $irc->yield('privmsg', $reply_to, 'The latest 10 RSS items follow...');
   for my $i (@_[ARG1..$#_]) {
-#printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
-    $irc->yield('privmsg', $channel, 'Latest RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
+printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
+    $irc->yield('privmsg', $reply_to, 'RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
+  $irc->yield('privmsg', $reply_to, 'End of latest 10 RSS items.');
 }
 
 sub irc_miggybot_rss_error {
   my ($kernel, $sender, $args, $error) = @_[KERNEL, SENDER, ARG0, ARG1];
-  my $channel = delete $args->{_channel};
+  my $reply_to = delete $args->{_reply_to};
 
 mylog("irc_miggybot_rss_error...");
-  $irc->yield('privmsg', $channel, "RSS Error: " . $error);
+  $irc->yield('privmsg', $reply_to, "RSS Error: " . $error);
 }
 ###########################################################################
 

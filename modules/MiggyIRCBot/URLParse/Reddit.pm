@@ -210,7 +210,7 @@ printf STDERR "_PARSE_REDDIT_URL_INFO: X-PCCH-Errmsg: %s\n", $res->header('X-PCC
 printf STDERR "_PARSE_REDDIT_URL_INFO: data is NOT present in JSON\n";
         push @params, 'irc_miggybot_url_error', $args, "Reddit API response was JSON, but no data";
       } else {
-printf STDERR "_PARSE_REDDIT_URL_INFO: data is present in JSON:\n%s\n", Dumper($json);
+#printf STDERR "_PARSE_REDDIT_URL_INFO: data is present in JSON:\n%s\n", Dumper($json);
         my $item = $json->{'data'}{'children'}[0]->{'data'};
         if ($item) {
           my $d = sprintf("[REDDIT] %s (%s) | %d points (%d|%d) | %d comments | Posted by %s", $item->{'title'}, $item->{'subreddit'}, $item->{'ups'} + $item->{'downs'}, $item->{'score'}, $item->{'downs'}, $item->{'num_comments'}, $item->{'author'});

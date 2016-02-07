@@ -203,20 +203,23 @@ sub _get_rss_latest {
   my @params;
   push @params, $args{session};
 
-  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 1");
+  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 10");
 #printf STDERR "_GET_RSS_LATEST: Executing query\n";
   my $res = $sth->execute();
+  my $pushed;
   while (my $row = $sth->fetchrow_hashref) {
+    if (!defined($pushed)) {
 #printf STDERR "_GET_RSS_LATEST: Got at least one row\n";
-    push @params, 'irc_miggybot_rss_latest', \%args;
+      push @params, 'irc_miggybot_rss_latest', \%args;
+    }
     push @params, $row;
-    $kernel->post( @params );
-    return;
+    $pushed = 1;
+#printf STDERR "_GET_RSS_LATEST: Pushed one row...\n";
   }
-  # else
+  if (!defined($pushed)) {
 printf STDERR "_GET_RSS_LATEST: No data?\n";
-
-  push @params, 'irc_miggybot_rss_error', \%args, "Coudn't retrieve latest RSS item from local database";
+    push @params, 'irc_miggybot_rss_error', \%args, "Coudn't retrieve latest RSS item from local database";
+  }
   $kernel->post( @params );
 
   undef;
