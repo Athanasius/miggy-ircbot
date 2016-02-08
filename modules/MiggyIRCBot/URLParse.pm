@@ -993,6 +993,8 @@ sub prettyprint {
 sub trunc_str {
   my ($line, $len) = @_;
 
+  $line =~ s/^[[:space:]]+//;
+  $line =~ s/[[:space:]]+$//;
   if (length($line) <= $len) {
     return $line;
   }
