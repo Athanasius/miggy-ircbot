@@ -2,7 +2,6 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
-*) Put something in the actual RSS reporting to detect if we have multiple new items for the same topic/poster, and if so collapse them into a single line/report.
 *) Track official server status, either using the launcher URL or http://www.edsm.net/api-status.
   <http://hosting.zaonce.net/launcher-status/status.json>
 *) !cgs command to display info about currently active CGs.
@@ -13,6 +12,7 @@ Vital to making bot more generic and easier to configure.
   Feed URL: https://community.elitedangerous.com/taxonomy/term/6/feed
   NB: I do/did have "Mark updated articles as unread" ticked.
 *) Config file for simple "say this" bot commands. FAQ module ?
+*) If we have Q Auth details then delay channel join until after auth (or some timer?).
 *) On the fly reloading of modules.
 *) Per site URL parsing to pull extra information or cope with the blurb we
    want not being in the <title>
@@ -67,7 +67,7 @@ Vital to making bot more generic and easier to configure.
       https://www.google.co.uk/search?client=safari&rls=en&q=.vap+for+t-flight+hotas+elite+dangerous&ie=UTF-8&oe=UTF-8&gfe_rd=cr&ei=nDmJVuKyBaSA7QbA5pjoAg#q=.vap+for+t-flight+site:forums.frontier.co.uk
     *.pdf ?
 
-*) If we have Q Auth details then delay channel join until after auth (or some timer?).
+*) Put something in the actual RSS reporting to detect if we have multiple new items for the same topic/poster, and if so collapse them into a single line/report. DONE
 *) Change "!rss latest" to inform the channel it's telling the user the latest
   10 items in MSG/NOTICE. DONE
 *) Config file to change "Reporting for duty" message DONE

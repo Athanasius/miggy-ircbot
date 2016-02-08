@@ -351,8 +351,11 @@ sub irc_miggybot_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $reply_to = delete $args->{_reply_to};
   my $errors_to = delete $args->{_errors_to};
+  my %topics;
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS:\n";
 
   if (defined($_[ARG1])) {
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
     for my $i (@_[ARG1..$#_]) {
       $irc->yield('privmsg', $reply_to, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
     }
