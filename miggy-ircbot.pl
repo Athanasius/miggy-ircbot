@@ -263,10 +263,42 @@ sub irc_miggybot_rss_newitems {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $reply_to = delete $args->{_reply_to};
   my $errors_to = delete $args->{_errors_to};
+  my %topics;
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS:\n";
 
   if (defined($_[ARG1])) {
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
     for my $i (@_[ARG1..$#_]) {
-      $irc->yield('privmsg', $reply_to, 'New from RSS: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item with permaLink '%s'\n", $i->{'permaLink'};
+      # https://forums.frontier.co.uk/showthread.php?t=101801&p=3541911#post3541911
+      if ($i->{'permaLink'} =~ /http(s)?:\/\/forums\.frontier\.co\.uk\/showthread\.php\?t=(?<t>[0-9]+)(&p=(?<p>[0-9]+)#post(?<post>[0-9]+))?$/) {
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n";
+        my $post;
+        if (defined($+{'p'})) {
+          $post = $+{'p'};
+        } else {
+          $post = 0;
+        }
+        if (!defined($topics{$+{'t'}})) {
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic hasn't been seen yet in this set\n";
+          $topics{$+{'t'}} = [ { 'guid' => $i->{'permaLink'}, 'title' => $i->{'title'}, 'post' => $post } ];
+        } else {
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic HAS been seen already in this set\n";
+          push @{$topics{$+{'t'}}}, { 'guid' => $i->{'permaLink'}, 'title' => $i->{'title'}, 'post' => $post };
+        }
+      }
+    }
+    foreach my $t (keys(%topics)) {
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'\n%s\n", $t, Dumper($topics{$t});
+printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'[%d]\n", $t, $#{$topics{$t}} + 1;
+      sort( { $a->{'post'} <=> $b->{'post'} } @{$topics{$t}} );
+      my $blurb = 'New RSS item: "' . $topics{$t}->[0]->{'title'} . '" - ' . $topics{$t}->[0]->{'guid'};
+      if ($#{$topics{$t}} > 1) {
+        $blurb .= sprintf(" (and %d other posts)", $#{$topics{$t}});
+      } elsif ($#{$topics{$t}} > 0) {
+        $blurb .= " (and one other post)";
+      }
+      $irc->yield('privmsg', $reply_to, $blurb);
     }
   } elsif (! $args->{quiet}) {
       $irc->yield('privmsg', $errors_to, 'No new RSS items at this time');
@@ -277,10 +309,10 @@ sub irc_miggybot_rss_latest {
   my ($kernel,$sender,$args) = @_[KERNEL,SENDER,ARG0];
   my $reply_to = delete $args->{_reply_to};
 
-printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
+#printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST\n";
   $irc->yield('privmsg', $reply_to, 'The latest 10 RSS items follow...');
   for my $i (@_[ARG1..$#_]) {
-printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
+#printf STDERR "_IRC_MiggyIRCBot_RSS_LATEST: Spitting out item\n";
     $irc->yield('privmsg', $reply_to, 'RSS item: "' . $i->{'title'} . '" - ' . $i->{'guid'});
   }
   $irc->yield('privmsg', $reply_to, 'End of latest 10 RSS items.');
