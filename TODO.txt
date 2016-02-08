@@ -2,6 +2,7 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
+*) Put something in the actual RSS reporting to detect if we have multiple new items for the same topic/poster, and if so collapse them into a single line/report.
 *) Track official server status, either using the launcher URL or http://www.edsm.net/api-status.
   <http://hosting.zaonce.net/launcher-status/status.json>
 *) !cgs command to display info about currently active CGs.
