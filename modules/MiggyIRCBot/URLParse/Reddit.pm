@@ -71,10 +71,7 @@ printf STDERR "_GET_REDDIT_AUTH_TOKEN\n";
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
 
-  if (defined($args{'_requested_auth'}) and $args{'_requested_auth'} == 1) {
-    $kernel->post($self->{'session_id'}, 'irc_miggybot_url_error', \%args, "No reddit Auth Token, and we've already tried!");
-    return undef;
-  }
+printf STDERR "_GET_REDDIT_AUTH_TOKEN: Requesting new token...\n";
   $heap->{reddit_url} = $args{'url'};
   $heap->{_channel} = $args{'_channel'};
   my $h = HTTP::Headers->new;
@@ -188,10 +185,17 @@ printf STDERR "_PARSE_REDDIT_URL_INFO\n";
 
   if (! $res->is_success) {
 printf STDERR "_PARSE_REDDIT_URL_INFO: res != success: %s\n", $res->status_line;
-printf STDERR "_PARSE_REDDIT_URL_INFO: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+if (defined($res->header('X-PCCH-Errmsg'))) { printf STDERR "_PARSE_REDDIT_URL_INFO: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg'); }
     if ($res->status_line eq "401 Unauthorized") {
+printf STDERR "_PARSE_REDDIT_URL_INFO: Got 401, requesting new token\n";
+      if (defined($args->{'_requested_auth'}) and $args->{'_requested_auth'} == 1) {
+printf STDERR "_GET_REDDIT_AUTH_TOKEN: Here again and already trying to request auth token\n";
+        $kernel->post($self->{'session_id'}, 'irc_miggybot_url_error', $args, "No reddit Auth Token, and we've already tried!");
+        return undef;
+      }
       $args->{'_requested_auth'} = 1;
       $kernel->post( $self->{session_id}, '_get_reddit_auth_token', $args );
+      return undef;
     } else {
       my $error = "Failed to parse Reddit API response: ";
       if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
