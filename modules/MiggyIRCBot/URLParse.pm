@@ -723,6 +723,40 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: matches regex\n";
     if (defined($+{'ship_name'})) {
       my $sn = $+{'ship_name'};
+      my %ship_names = (
+        'adder' => 'Adder',
+        'anaconda' => 'Anaconda',
+        'asp' => 'Asp Explorer',
+        'asp_count' => 'Asp Scout',
+        'cobra_mk_iii' => 'Cobra Mk III',
+        'cobra_mk_iv' => 'Cobra Mk IV',
+        'diamondback_explorer' => 'Diamondback Explorer',
+        'diamondback_scout' => 'Diamondback Scout',
+        'eagle' => 'Eagle',
+        'federal_assault_ship' => 'Federal Assault Ship',
+        'federal_corvette' => 'Federal Corvette',
+        'federal_dropship' => 'Federal Dropship',
+        'federal_gunship' => 'Federal Gunship',
+        'fer_de_lance' => 'Fer de Lance',
+        'hauler' => 'Hauler',
+        'imperial_clipper' => 'Imperial Clipper',
+        'imperial_courier' => 'Imperial Courier',
+        'imperial_cutter' => 'Imperial Cutter',
+        'imperial_eagle' => 'Imperial Eagle',
+        'keelback' => 'Keelback',
+        'orca' => 'Orca',
+        'python' => 'Python',
+        'sidewinder' => 'Sidewinder',
+        'type_6_transporter' => 'Type-6 Transporter',
+        'type_7_transporter' => 'Type-7 Transporter',
+        'type_9_heavy' => 'Type-9 Heavy',
+        'viper' => 'Viper Mk III',
+        'viper_mk_iv' => 'Viper Mk IV',
+        'vulture' => 'Vulture',
+      );
+      if (defined($ship_names{lc($sn)})) {
+        $sn = $ship_names{lc($sn)};
+      }
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got ship_name\n";
       if (defined($+{'build_name'})) {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got build_name\n";
