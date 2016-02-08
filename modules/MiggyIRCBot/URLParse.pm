@@ -29,8 +29,8 @@ my %sites = (
   '^http(s)?:\/\/imgur\.com\/gallery\/([^\.\/]+)$' => {get => \&get_imgur_gallery, parse => \&parse_imgur_gallery },
   '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
   '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
-  '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
-  '^http(s)?:\/\/www\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
+  '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
+  '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/www\.twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
 
 ## Ignores
