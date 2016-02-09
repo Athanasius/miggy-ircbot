@@ -2,7 +2,6 @@
 # vim: textwidth=0 wrapmargin=0 shiftwidth=2 tabstop=2 expandtab softtabstop
 
 LASTID=0
-
 while :;
 do
   DATA=`sqlite3 rss.db 'SELECT id,pubdate,title,link FROM rss_items ORDER BY id DESC LIMIT 1;'`
