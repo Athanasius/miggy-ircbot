@@ -7,7 +7,7 @@ use open qw{:std :utf8};
 use POE;
 use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::Connector;
-use POE::Component::IRC::Plugin::QuakenetAuth;
+use POE::Component::IRC::Qnet::Auth;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
@@ -105,8 +105,8 @@ sub _start {
   );
   if ($config->getconf('ircserver') =~ /\.quakenet\.org$/i
     and defined($config->getconf('qauth')) and defined($config->getconf('qpass'))) {
-    $irc->plugin_add('QuakenetAuth',
-      POE::Component::IRC::Plugin::QuakenetAuth->new(
+    $irc->plugin_add('Qnet::Auth',
+      POE::Component::IRC::Qnet::Auth->new(
         'AuthName' => $config->getconf('qauth'),
         'Password' => $config->getconf('qpass')
       )
@@ -163,16 +163,7 @@ sub irc_001 {
   print " irc_001:\n";
 
   # Set mode +x
-  print " Attempt to set usermode +x\n";
   $irc->yield('mode', $config->getconf('nickname') . " +x");
-
-  # Lets authenticate with Quakenet's Q bot
-  my $qauth = $config->getconf('qauth');
-  my $qpass = $config->getconf('qpass');
-  if (defined($qauth) and $qauth ne '' and defined($qpass) and $qpass ne '') {
-    print "  Qauth and Qpass appear set. Attempting Q Auth...\n";
-    $kernel->post( $sender => qbot_auth => $config->getconf('qauth') => $config->getconf('qpass') );
-  }
 
   return;
 }

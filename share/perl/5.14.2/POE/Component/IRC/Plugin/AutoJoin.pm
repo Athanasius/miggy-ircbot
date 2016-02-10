@@ -70,7 +70,7 @@ sub S_isupport {
     my ($self, $irc) = splice @_, 0, 2;
 
     if (!grep { $_->isa('POE::Component::IRC::Plugin::NickServID') } values %{ $irc->plugin_list() } and
-      !grep { $_->isa('POE::Component::IRC::Plugin::QuakenetAuth') } values %{ $irc->plugin_list() }) {
+      !grep { $_->isa('POE::Component::IRC::Qnet::Auth') } values %{ $irc->plugin_list() }) {
         # we don't have to wait for NickServ or Q Auth, so let's join
         while (my ($chan, $key) = each %{ $self->{Channels} }) {
             $irc->yield(join => $chan => (defined $key ? $key : ()));

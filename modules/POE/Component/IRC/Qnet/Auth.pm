@@ -1,9 +1,9 @@
-package POE::Component::IRC::Plugin::QuakenetAuth;
+package POE::Component::IRC::Qnet::Auth;
 BEGIN {
-#  $POE::Component::IRC::Plugin::QuakenetAuth::AUTHORITY = 'cpan:HINRIK';
+#  $POE::Component::IRC::Qnet::Auth::AUTHORITY = 'cpan:HINRIK';
 #}
 #{
-  $POE::Component::IRC::Plugin::QuakenetAuth::VERSION = '0.01';
+  $POE::Component::IRC::Qnet::Auth::VERSION = '0.01';
 }
 
 use strict;
@@ -34,12 +34,9 @@ sub PCI_unregister {
     return 1;
 }
 
-# we identify after S_isupport so that pocoirc has a chance to turn on
-# CAPAB IDENTIFY-MSG (if the server supports it) before the AutoJoin
-# plugin joins channels
 sub S_isupport {
     my ($self, $irc) = splice @_, 0, 2;
-    $irc->yield(privmsg => "Q\@Cserve.quakenet.org AUTH $self->{AuthName} $self->{Password}");
+    $irc->yield(qbot_auth => $self->{AuthName} => $self->{Password});
     return PCI_EAT_NONE;
 }
 
@@ -61,20 +58,20 @@ sub S_notice {
 
 =head1 NAME
 
-POE::Component::IRC::Plugin::QuakenetAuth - A PoCo-IRC plugin which identifies with NickServ when needed
+POE::Component::IRC::Qnet::Auth - A PoCo-IRC plugin which identifies with NickServ when needed
 
 =head1 SYNOPSIS
 
- use POE::Component::IRC::Plugin::QuakenetAuth;
+ use POE::Component::IRC::Qnet::Auth;
 
- $irc->plugin_add( 'QuakenetAuth', POE::Component::IRC::Plugin::QuakenetAuth->new(
+ $irc->plugin_add( 'Qnet::Auth', POE::Component::IRC::Qnet::Auth->new(
      AuthName => 'qauthname',
      Password => 'opensesame'
  ));
 
 =head1 DESCRIPTION
 
-POE::Component::IRC::Plugin::QuakenetAuth is a L<POE::Component::IRC|POE::Component::IRC>
+POE::Component::IRC::Qnet::Auth is a L<POE::Component::IRC|POE::Component::IRC>
 plugin. It auths with Q on connect.
 
 B<Note>: If you have use usermod +x to hide your host and don't want
