@@ -7,6 +7,7 @@ use open qw{:std :utf8};
 use POE;
 use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::Connector;
+use POE::Component::IRC::Plugin::QuakenetAuth;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
@@ -102,9 +103,19 @@ sub _start {
       password => $config->getconf('console_password'),
     )
   );
+  if ($config->getconf('ircserver') =~ /\.quakenet\.org$/i
+    and defined($config->getconf('qauth')) and defined($config->getconf('qpass'))) {
+    $irc->plugin_add('QuakenetAuth',
+      POE::Component::IRC::Plugin::QuakenetAuth->new(
+        'AuthName' => $config->getconf('qauth'),
+        'Password' => $config->getconf('qpass')
+      )
+    );
+  }
   $irc->plugin_add('AutoJoin',
     POE::Component::IRC::Plugin::AutoJoin->new(
-      Channels => [ $config->getconf('channel') ]
+      Channels => [ $config->getconf('channel') ],
+      NickServ_delay => 60,
     )
   );
   $irc->plugin_add('Seen',
