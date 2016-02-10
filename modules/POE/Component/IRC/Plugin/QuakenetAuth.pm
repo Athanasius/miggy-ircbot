@@ -43,8 +43,6 @@ sub S_isupport {
     return PCI_EAT_NONE;
 }
 
-# FIXME: Maybe do this using the following message instead?
-# irc_396:  'servercentral.il.us.quakenet.org' 'qauth.users.quakenet.org :is now your hidden host' [qauth.users.quakenet.org, is now your hidden host]
 sub S_notice {
     my ($self, $irc) = splice @_, 0, 2;
     my $sender    = parse_user(${ $_[0] });
