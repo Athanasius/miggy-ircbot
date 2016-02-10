@@ -23,6 +23,12 @@ my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
   die "No config!";
 }
+# We don't want no proxy
+if (defined($config->getconf('no_env_http_proxy')) and $config->getconf('no_env_http_proxy') eq 'true') {
+printf STDERR "no_env_http_proxy is 'true', nuking HTTP_PROXY and http_proxy in ENV\n";
+  $ENV{'HTTP_PROXY'} = undef;
+  $ENV{'http_proxy'} = undef;
+}
 
 my $irc = POE::Component::IRC::Qnet::State->spawn();
 

@@ -5,6 +5,9 @@ channel: #SomeIRCChannel
 ready_message: Ready for action!
 console_port: 3337
 crowdfund_funds_check_time: 300
+# Use this to nuke HTTP_PROXY and http_proxy environment variables so
+# as to stop any proxy use.
+no_env_http_proxy: false
 rss_check_time: 900
 qauth: Some Q Auth
 qpass: Some Q Password

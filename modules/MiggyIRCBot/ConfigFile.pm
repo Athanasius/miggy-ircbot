@@ -11,6 +11,7 @@ our %config = (
   'console_port' => 3337,
   'console_password' => 'UnwindLamps',
   'seen_filestore' => 'seen_filestore.db',
+  'no_env_http_proxy' => 'false',
   'rss_url' => 'http://www.miggy.org/games/elite-dangerous/devtracker/ed-dev-posts.rss',
   'rss_filestore' => 'rss.db',
   'rss_check_time' => 300,
@@ -61,6 +62,8 @@ sub new {
       $config{'console_password'} = $1;
     } elsif (/^seen_filestore:\s+(.*)$/i) {
       $config{'seen_filestore'} = $1;
+    } elsif (/^no_env_http_proxy:\s+(.*)$/i) {
+      $config{'no_env_http_proxy'} = $1;
     } elsif (/^crowdfund_funds_check_time:\s+(.*)$/i) {
       $config{'crowdfund_funds_check_time'} = $1;
     } elsif (/^crowdfund_url:\s+(.*)$/i) {
