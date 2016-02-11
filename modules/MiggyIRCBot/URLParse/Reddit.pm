@@ -16,9 +16,15 @@ my $reddit_token;
 sub new {
   my ($class, %args) = @_;
   my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
 
 #printf STDERR "MiggyIRCBot::URLParse::Reddit->new()\n";
   ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password) = ($args{'reddit_clientid'}, $args{'reddit_secret'}, $args{'reddit_username'}, $args{'reddit_password'});
+
+  unless ( $self->{http_alias} ) {
+    print STDERR "MiggyIRCBot::URLParse::Reddit - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
+  }
 
   $self->{session_id} = POE::Session->create(
     object_states => [
@@ -27,14 +33,7 @@ sub new {
   )->ID();
 #printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): Got Session\n";
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyircbot-reddit', $self->{session_id} );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      Timeout         => 30,
-      FollowRedirects => $self->{follow_redirects},
-    );
+    die "Must have an http_alias set up via MiggyIRCBot::HTTP\n";
   }
 #printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): \$self = %s\n", Dumper($self);
 

@@ -48,6 +48,7 @@ my %sites = (
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
 
 printf STDERR "MiggyIRCBot::URLParse->new()\n";
   $youtube_api_key = $args{'youtube_api_key'};
@@ -65,14 +66,8 @@ sub PCI_register {
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
 
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      #Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
-      FollowRedirects => $self->{follow_redirects},
-    );
+    print STDERR "MiggyIRCBot::URLParse - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
   }
 
   $self->{session_id} = POE::Session->create(
@@ -82,12 +77,15 @@ sub PCI_register {
   )->ID();
   $poe_kernel->state( 'get_url', $self );
 
-  $reddit = MiggyIRCBot::URLParse::Reddit->new(
+  if (! ($reddit = MiggyIRCBot::URLParse::Reddit->new(
+    http_alias          => $self->{'http_alias'},
     reddit_clientid     => $reddit_clientid,
     reddit_secret       => $reddit_secret,
     reddit_username     => $reddit_username,
     reddit_password     => $reddit_password,
-  );
+  ))) {
+    return 0;
+  }
 #printf STDERR "reddit -> %s\n", Dumper($reddit);
 
   return 1;

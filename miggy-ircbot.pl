@@ -14,11 +14,13 @@ use POE::Component::IRC::Plugin::Seen;
 use POE::Component::IRC::Plugin::BotCommand;
 
 use MiggyIRCBot::ConfigFile;
+use MiggyIRCBot::HTTP;
 use MiggyIRCBot::RSS;
 use MiggyIRCBot::URLParse;
 use MiggyIRCBot::AlarmClock;
 use POSIX qw/strftime/;
 use Data::Dumper;
+#use Devel::StackTrace;
 
 my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
@@ -32,6 +34,7 @@ printf STDERR "no_env_http_proxy is 'true', nuking HTTP_PROXY and http_proxy in 
 }
 
 my $irc = POE::Component::IRC::Qnet::State->spawn();
+my $http;
 
 POE::Session->create(
   package_states => [
@@ -124,16 +127,25 @@ sub _start {
     )
   );
 
-  $irc->plugin_add('MiggyIRCBotRSS',
+  $irc->plugin_add('MiggyIRCBotHTTP',
+    $http = MiggyIRCBot::HTTP->new(
+      no_http_proxy => $config->getconf('no_http_proxy')
+    )
+  );
+  if (! $irc->plugin_add('MiggyIRCBotRSS',
     MiggyIRCBot::RSS->new(
+      http_alias => $http->{'http_alias'},
       rss_url => $config->getconf('rss_url'),
       rss_file => $config->getconf('rss_filestore')
     )
-  );
+  )) {
+    return 0;
+  }
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
-  $irc->plugin_add('MiggyIRCBotURLParse',
+  if (! $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
+      http_alias => $http->{'http_alias'},
       youtube_api_key => $config->getconf('youtube_api_key'),
       imgur_clientid => $config->getconf('imgur_clientid'),
       imgur_clientsecret => $config->getconf('imgur_clientsecret'),
@@ -143,7 +155,9 @@ sub _start {
       reddit_secret => $config->getconf('reddit_secret'),
       twitchtv_clientid => $config->getconf('twitchtv_clientid'),
     )
-  );
+  )) {
+    return 0;
+  }
 
   $irc->plugin_add('MiggyIRCBotAlarmClock',
     MiggyIRCBot::AlarmClock->new()
@@ -301,7 +315,8 @@ printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n
     foreach my $t (keys(%topics)) {
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'\n%s\n", $t, Dumper($topics{$t});
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'[%d]\n", $t, $#{$topics{$t}} + 1;
-      sort( { $a->{'post'} <=> $b->{'post'} } @{$topics{$t}} );
+#print STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Stack:\n", Devel::StackTrace->new->as_string, "\n";
+      @{$topics{$t}} = sort( { $a->{'post'} <=> $b->{'post'} } @{$topics{$t}} );
       my $blurb = 'New RSS item: "' . $topics{$t}->[0]->{'title'} . '" - ' . $topics{$t}->[0]->{'guid'};
       if ($#{$topics{$t}} > 1) {
         $blurb .= sprintf(" (and %d other posts)", $#{$topics{$t}});

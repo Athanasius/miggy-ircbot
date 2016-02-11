@@ -19,6 +19,7 @@ our $rss_db;
 sub new {
   my ($class, %args) = @_;
   my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
   $rss_url = $args{'rss_url'};
   $rss_file = $args{'rss_file'};
 
@@ -37,22 +38,17 @@ sub PCI_register {
   my ($self,$irc) = @_;
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
+
+printf STDERR "MiggyIRCBot::RSS->PCI_register()\n";
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      #Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
-      Timeout         => 30,
-      FollowRedirects => $self->{follow_redirects},
-      #NoProxy         => [ 0.0.0.0 ],
-    );
+    print STDERR "MiggyIRCBot::RSS - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
   }
+
   $self->{session_id} = POE::Session->create(
-  object_states => [
-    $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
-  ],
+    object_states => [
+      $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
+    ],
   )->ID();
   $poe_kernel->state( 'get_rss_items', $self );
   $poe_kernel->state( 'get_rss_latest', $self );

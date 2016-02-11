@@ -5,9 +5,8 @@ channel: #SomeIRCChannel
 ready_message: Ready for action!
 console_port: 3337
 crowdfund_funds_check_time: 300
-# Set this to 'true' to nuke HTTP_PROXY and http_proxy environment variables
-# so as to stop any proxy use.
-no_env_http_proxy: false
+# Set this as per NoProxy in POE::Component::Client::HTTP docs
+no_http_proxy: 0.0.0.0
 rss_check_time: 900
 qauth: Some Q Auth
 qpass: Some Q Password
