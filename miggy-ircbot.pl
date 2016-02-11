@@ -277,9 +277,9 @@ sub irc_miggybot_rss_newitems {
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS:\n";
 
   if (defined($_[ARG1])) {
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
     for my $i (@_[ARG1..$#_]) {
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item with permaLink '%s'\n", $i->{'permaLink'};
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item with permaLink '%s'\n", $i->{'permaLink'};
       # https://forums.frontier.co.uk/showthread.php?t=101801&p=3541911#post3541911
       if ($i->{'permaLink'} =~ /http(s)?:\/\/forums\.frontier\.co\.uk\/showthread\.php\?t=(?<t>[0-9]+)(&p=(?<p>[0-9]+)#post(?<post>[0-9]+))?$/) {
 printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n";
@@ -290,17 +290,17 @@ printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n
           $post = 0;
         }
         if (!defined($topics{$+{'t'}})) {
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic hasn't been seen yet in this set\n";
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic hasn't been seen yet in this set\n";
           $topics{$+{'t'}} = [ { 'guid' => $i->{'permaLink'}, 'title' => $i->{'title'}, 'post' => $post } ];
         } else {
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic HAS been seen already in this set\n";
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic HAS been seen already in this set\n";
           push @{$topics{$+{'t'}}}, { 'guid' => $i->{'permaLink'}, 'title' => $i->{'title'}, 'post' => $post };
         }
       }
     }
     foreach my $t (keys(%topics)) {
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'\n%s\n", $t, Dumper($topics{$t});
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'[%d]\n", $t, $#{$topics{$t}} + 1;
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'[%d]\n", $t, $#{$topics{$t}} + 1;
       sort( { $a->{'post'} <=> $b->{'post'} } @{$topics{$t}} );
       my $blurb = 'New RSS item: "' . $topics{$t}->[0]->{'title'} . '" - ' . $topics{$t}->[0]->{'guid'};
       if ($#{$topics{$t}} > 1) {

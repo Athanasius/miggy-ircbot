@@ -46,6 +46,7 @@ sub PCI_register {
       #Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
       Timeout         => 30,
       FollowRedirects => $self->{follow_redirects},
+      #NoProxy         => [ 0.0.0.0 ],
     );
   }
   $self->{session_id} = POE::Session->create(
