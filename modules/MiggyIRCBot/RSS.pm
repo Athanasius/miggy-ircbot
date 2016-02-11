@@ -9,6 +9,7 @@ use XML::RSS;
 use HTTP::Request;
 use DBI;
 use DBD::SQLite;
+use POSIX qw/strftime/;
 
 our %rss_items;
 our $rss_url;
@@ -96,6 +97,8 @@ sub _shutdown {
 sub get_rss_items {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
 #printf STDERR "GET_ITEMS\n";
+
+  mylog("GET_RSS_ITEMS: Posting to __GET_RSS_ITEMS");
   $kernel->post( $self->{session_id}, '_get_rss_items', @_[ARG0..$#_] );
   undef;
 }
@@ -103,14 +106,14 @@ sub get_rss_items {
 sub _get_rss_items {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-#printf STDERR "_GET_ITEMS\n";
+  mylog("__GET_RSS_ITEMS: called");
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
      %args = @_[ARG0..$#_];
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
-#printf STDERR "_GET_ITEMS: posting to http_alias\n";
+  mylog("_GET_RSS_ITEMS: posting to http_alias");
   $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new('GET', $rss_url, ['Connection' => 'close'] ), \%args );
   undef;
 }
@@ -119,19 +122,19 @@ sub _parse_rss_items {
   my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
   my $args = $request->[1];
   my @params;
-#printf STDERR "_PARSE_RSS_ITEMS\n";
+  mylog("_PARSE_RSS_ITEMS: called");
   push @params, $args->{session};
   my $result = $response->[0];
   if ( $result->is_success ) {
     if (!defined($result->header('Content-Type')) or $result->header('Content-Type') ne "application/rss+xml") {
-#printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type\n";
+      mylog("_PARSE_RSS_ITEMS: Bad Content-Type");
       my $ct;
       if (!defined($result->header('Content-Type')) or $result->header('Content-Type') eq "") {
-#printf STDERR "_PARSE_RSS_ITEMS: !defined or empty Content-Type\n";
+        mylog("_PARSE_RSS_ITEMS: !defined or empty Content-Type");
         $ct = "<empty>";
       } else {
         $ct = $result->header('Content-Type');
-#printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type is '%s'\n", $result->header('Content-Type');
+        mylog("_PARSE_RSS_ITEMS: Bad Content-Type is '" . $result->header('Content-Type') . "'");
       }
       push(@params, 'irc_miggybot_rss_error', $args, "Incorrect Content-Type: " . $ct);
     } elsif ($result->content !~ /<rss version/) {
@@ -142,6 +145,7 @@ sub _parse_rss_items {
       eval { $rss->parse($str); };
       if ($@) {
         push @params, 'irc_miggybot_rss_error', $args, $@;
+        mylog("_PARSE_RSS_ITEMS: Error from XML::RSS->parse()");
       } else {
         my $sth = $rss_db->prepare("INSERT INTO rss_items (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
         push @params, 'irc_miggybot_rss_newitems', $args;
@@ -171,6 +175,7 @@ sub _parse_rss_items {
               }
             }
             $sth->execute($rss_item{'title'}, $rss_item{'link'}, $rss_item{'description'}, $rss_item{'author'}, $rss_item{'category'}, $rss_item{'comments'}, $rss_item{'enclosure'}, $rss_item{'guid'}, $rss_item{'pubdate'}, $rss_item{'source'}, $rss_item{'content'});
+            mylog("_PARSE_RSS_ITEMS: Should have just INSERTed item: '" . join("', '", $rss_item{'title'}, $rss_item{'link'}, $rss_item{'author'}, $rss_item{'guid'}, $rss_item{'pubdate'}) . "'");
           }
         }
       }
@@ -226,4 +231,11 @@ printf STDERR "_GET_RSS_LATEST: No data?\n";
 }
 ###########################################################################
 
+###########################################################################
+# Misc. helper sub-routines
+###########################################################################
+sub mylog {
+  printf STDERR "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), @_;
+}
+###########################################################################
 1;

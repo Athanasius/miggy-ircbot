@@ -243,8 +243,10 @@ printf STDERR "irc_public/action: parsed '\n%s\n' from '\n%s\n', passing to get_
 sub handle_rss_check {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
+  mylog("HANDLE_RSS_CHECK: Triggering 'get_rss_items'");
   $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 1 } );
 
+  mylog("HANDLE_RSS_CHECK: Setting new run after " . $config->getconf('rss_check_time') . " seconds");
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 }
 
