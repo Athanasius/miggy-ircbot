@@ -169,7 +169,7 @@ sub get_generic {
   # If you don't add the 'Connection: close' header than a HTTP/1.1 server
   # with a long persistent connection timeout will mean you don't actually
   # get your full response until it closes the connection.
-  my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close']);
+  my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 mylog("_GET_GENERIC: '", $args{'url'}, "'");
 #printf STDERR "GET_GENERIC: req is:\n%s\n", $req->as_string();
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
