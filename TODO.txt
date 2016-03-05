@@ -6,6 +6,7 @@ Vital to making bot more generic and easier to configure.
   <http://hosting.zaonce.net/launcher-status/status.json>
 *) !cgs command to display info about currently active CGs.
   See: <http://hosting.zaonce.net/launcher/elite/en.html>
+*) Look into a URL un-shortener to de-obfuscate such URLs.
 *) RSS on Community Site occasionally throws up old articles in tt-rss, beware!
   Example: https://community.elitedangerous.com/node/381 keeps showing up today
   Sat Feb  6 17:04:14 GMT 2016
@@ -67,6 +68,7 @@ Vital to making bot more generic and easier to configure.
       https://www.google.co.uk/search?client=safari&rls=en&q=.vap+for+t-flight+hotas+elite+dangerous&ie=UTF-8&oe=UTF-8&gfe_rd=cr&ei=nDmJVuKyBaSA7QbA5pjoAg#q=.vap+for+t-flight+site:forums.frontier.co.uk
     *.pdf ?
 
+*) coriolis.io URL parsing - have a ship_name (as path component) to proper name mapping. DONE
 *) Put something in the actual RSS reporting to detect if we have multiple new items for the same topic/poster, and if so collapse them into a single line/report. DONE
 *) Change "!rss latest" to inform the channel it's telling the user the latest
   10 items in MSG/NOTICE. DONE

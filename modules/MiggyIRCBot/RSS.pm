@@ -9,6 +9,7 @@ use XML::RSS;
 use HTTP::Request;
 use DBI;
 use DBD::SQLite;
+use POSIX qw/strftime/;
 
 our %rss_items;
 our $rss_url;
@@ -18,6 +19,7 @@ our $rss_db;
 sub new {
   my ($class, %args) = @_;
   my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
   $rss_url = $args{'rss_url'};
   $rss_file = $args{'rss_file'};
 
@@ -36,21 +38,17 @@ sub PCI_register {
   my ($self,$irc) = @_;
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
+
+printf STDERR "MiggyIRCBot::RSS->PCI_register()\n";
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      #Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
-      Timeout         => 30,
-      FollowRedirects => $self->{follow_redirects},
-    );
+    print STDERR "MiggyIRCBot::RSS - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
   }
+
   $self->{session_id} = POE::Session->create(
-  object_states => [
-    $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
-  ],
+    object_states => [
+      $self => [ qw(_shutdown _start _get_rss_items _parse_rss_items _get_rss_latest) ],
+    ],
   )->ID();
   $poe_kernel->state( 'get_rss_items', $self );
   $poe_kernel->state( 'get_rss_latest', $self );
@@ -96,6 +94,8 @@ sub _shutdown {
 sub get_rss_items {
   my ($kernel,$self,$session) = @_[KERNEL,OBJECT,SESSION];
 #printf STDERR "GET_ITEMS\n";
+
+  mylog("GET_RSS_ITEMS: Posting to __GET_RSS_ITEMS");
   $kernel->post( $self->{session_id}, '_get_rss_items', @_[ARG0..$#_] );
   undef;
 }
@@ -103,15 +103,15 @@ sub get_rss_items {
 sub _get_rss_items {
   my ($kernel, $self) = @_[KERNEL, OBJECT];
   my %args;
-#printf STDERR "_GET_ITEMS\n";
+  mylog("__GET_RSS_ITEMS: called");
   if ( ref $_[ARG0] eq 'HASH' ) {
      %args = %{ $_[ARG0] };
   } else {
      %args = @_[ARG0..$#_];
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
-#printf STDERR "_GET_ITEMS: posting to http_alias\n";
-  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new('GET', $rss_url, ['Connection' => 'close'] ), \%args );
+  mylog("_GET_RSS_ITEMS: posting to http_alias");
+  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new('GET', $rss_url, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7'] ), \%args );
   undef;
 }
 
@@ -119,29 +119,31 @@ sub _parse_rss_items {
   my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
   my $args = $request->[1];
   my @params;
-#printf STDERR "_PARSE_RSS_ITEMS\n";
+  mylog("_PARSE_RSS_ITEMS: called");
   push @params, $args->{session};
   my $result = $response->[0];
   if ( $result->is_success ) {
     if (!defined($result->header('Content-Type')) or $result->header('Content-Type') ne "application/rss+xml") {
-#printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type\n";
+      mylog("_PARSE_RSS_ITEMS: Bad Content-Type");
       my $ct;
       if (!defined($result->header('Content-Type')) or $result->header('Content-Type') eq "") {
-#printf STDERR "_PARSE_RSS_ITEMS: !defined or empty Content-Type\n";
+        mylog("_PARSE_RSS_ITEMS: !defined or empty Content-Type");
         $ct = "<empty>";
       } else {
         $ct = $result->header('Content-Type');
-#printf STDERR "_PARSE_RSS_ITEMS: Bad Content-Type is '%s'\n", $result->header('Content-Type');
+        mylog("_PARSE_RSS_ITEMS: Bad Content-Type is '" . $result->header('Content-Type') . "'");
       }
       push(@params, 'irc_miggybot_rss_error', $args, "Incorrect Content-Type: " . $ct);
     } elsif ($result->content !~ /<rss version/) {
       push(@params, 'irc_miggybot_rss_error', $args, "No RSS tag/version");
     } else {
       my $str = $result->content;
+      #mylog("_PARSE_RSS_ITEMS: String to be parsed is\n'" . $str . "'\n\n");
       my $rss = XML::RSS->new();
       eval { $rss->parse($str); };
       if ($@) {
         push @params, 'irc_miggybot_rss_error', $args, $@;
+        mylog("_PARSE_RSS_ITEMS: Error from XML::RSS->parse()\n", $str, "\n\n");
       } else {
         my $sth = $rss_db->prepare("INSERT INTO rss_items (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
         push @params, 'irc_miggybot_rss_newitems', $args;
@@ -171,6 +173,7 @@ sub _parse_rss_items {
               }
             }
             $sth->execute($rss_item{'title'}, $rss_item{'link'}, $rss_item{'description'}, $rss_item{'author'}, $rss_item{'category'}, $rss_item{'comments'}, $rss_item{'enclosure'}, $rss_item{'guid'}, $rss_item{'pubdate'}, $rss_item{'source'}, $rss_item{'content'});
+            mylog("_PARSE_RSS_ITEMS: Should have just INSERTed item: '" . join("', '", $rss_item{'title'}, $rss_item{'link'}, $rss_item{'author'}, $rss_item{'guid'}, $rss_item{'pubdate'}) . "'");
           }
         }
       }
@@ -226,4 +229,11 @@ printf STDERR "_GET_RSS_LATEST: No data?\n";
 }
 ###########################################################################
 
+###########################################################################
+# Misc. helper sub-routines
+###########################################################################
+sub mylog {
+  printf STDERR "%s - %s\n", strftime("%Y-%m-%d %H:%M:%S UTC", gmtime()), @_;
+}
+###########################################################################
 1;

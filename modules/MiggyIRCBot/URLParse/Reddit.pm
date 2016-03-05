@@ -16,9 +16,15 @@ my $reddit_token;
 sub new {
   my ($class, %args) = @_;
   my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
 
 #printf STDERR "MiggyIRCBot::URLParse::Reddit->new()\n";
   ($reddit_clientid, $reddit_secret, $reddit_username, $reddit_password) = ($args{'reddit_clientid'}, $args{'reddit_secret'}, $args{'reddit_username'}, $args{'reddit_password'});
+
+  unless ( $self->{http_alias} ) {
+    print STDERR "MiggyIRCBot::URLParse::Reddit - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
+  }
 
   $self->{session_id} = POE::Session->create(
     object_states => [
@@ -27,14 +33,7 @@ sub new {
   )->ID();
 #printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): Got Session\n";
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyircbot-reddit', $self->{session_id} );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      Timeout         => 30,
-      FollowRedirects => $self->{follow_redirects},
-    );
+    die "Must have an http_alias set up via MiggyIRCBot::HTTP\n";
   }
 #printf STDERR "MiggyIRCBot::URLParse::Reddit->new(): \$self = %s\n", Dumper($self);
 
@@ -76,7 +75,7 @@ printf STDERR "_GET_REDDIT_AUTH_TOKEN: Requesting new token...\n";
   $heap->{_channel} = $args{'_channel'};
   my $h = HTTP::Headers->new;
   $h->authorization_basic($reddit_clientid, $reddit_secret);
-  $h->header("Connection" => "close");
+  $h->header('Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7');
   my $req = HTTP::Request->new('POST', 'https://www.reddit.com/api/v1/access_token', $h, 'grant_type=password&username=' . $reddit_username . '&password=' . $reddit_password);
 #printf STDERR "_GET_REDDIT_AUTH_TOKEN: Request = '%s'\n", Dumper($req);
   $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_auth_token', $req, \%args);
@@ -163,11 +162,11 @@ printf STDERR "_GET_REDDIT_URL_INFO: Url '%s'\n", $args{'url'};
   my (undef, $link, $req);
   if ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/([^\/]+)/) {
 #printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close", 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7' ] );
 #printf STDERR "_GET_REDDIT_URL_INFO: Request = '%s'\n", Dumper($req);
   } elsif ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/.+\.reddit\.com\/r\/([^\/]+)/) {
 printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/r/' . $link . '/about', ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/r/' . $link . '/about', ["Authorization" => "bearer " . $reddit_token, "Connection" => "close", 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7' ] );
   }
   $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_url_info', $req, \%args);
 

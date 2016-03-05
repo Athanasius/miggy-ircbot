@@ -7,6 +7,7 @@ use open qw{:std :utf8};
 use POE;
 use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::Connector;
+use POE::Component::IRC::Qnet::Auth;
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
@@ -14,18 +15,27 @@ use POE::Component::IRC::Plugin::BotCommand;
 
 use MiggyIRCBot::Crowdfund;
 use MiggyIRCBot::ConfigFile;
+use MiggyIRCBot::HTTP;
 use MiggyIRCBot::RSS;
 use MiggyIRCBot::URLParse;
 use MiggyIRCBot::AlarmClock;
 use POSIX qw/strftime/;
 use Data::Dumper;
+#use Devel::StackTrace;
 
 my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
   die "No config!";
 }
+# We don't want no proxy
+if (defined($config->getconf('no_env_http_proxy')) and lc($config->getconf('no_env_http_proxy')) eq 'true') {
+printf STDERR "no_env_http_proxy is 'true', nuking HTTP_PROXY and http_proxy in ENV\n";
+  $ENV{'HTTP_PROXY'} = undef;
+  $ENV{'http_proxy'} = undef;
+}
 
 my $irc = POE::Component::IRC::Qnet::State->spawn();
+my $http;
 
 POE::Session->create(
   package_states => [
@@ -120,9 +130,19 @@ sub _start {
       password => $config->getconf('console_password'),
     )
   );
+  if ($config->getconf('ircserver') =~ /\.quakenet\.org$/i
+    and defined($config->getconf('qauth')) and defined($config->getconf('qpass'))) {
+    $irc->plugin_add('Qnet::Auth',
+      POE::Component::IRC::Qnet::Auth->new(
+        'AuthName' => $config->getconf('qauth'),
+        'Password' => $config->getconf('qpass')
+      )
+    );
+  }
   $irc->plugin_add('AutoJoin',
     POE::Component::IRC::Plugin::AutoJoin->new(
-      Channels => [ $config->getconf('channel') ]
+      Channels => [ $config->getconf('channel') ],
+      NickServ_delay => 60,
     )
   );
   $irc->plugin_add('Seen',
@@ -131,12 +151,20 @@ sub _start {
     )
   );
 
-  $irc->plugin_add('MiggyIRCBotRSS',
+  $irc->plugin_add('MiggyIRCBotHTTP',
+    $http = MiggyIRCBot::HTTP->new(
+      no_http_proxy => $config->getconf('no_http_proxy')
+    )
+  );
+  if (! $irc->plugin_add('MiggyIRCBotRSS',
     MiggyIRCBot::RSS->new(
+      http_alias => $http->{'http_alias'},
       rss_url => $config->getconf('rss_url'),
       rss_file => $config->getconf('rss_filestore')
     )
-  );
+  )) {
+    return 0;
+  }
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
   $irc->plugin_add('SCCrowdfund',
@@ -151,8 +179,9 @@ sub _start {
     MiggyIRCBot::URLParse->new()
   );
 
-  $irc->plugin_add('MiggyIRCBotURLParse',
+  if (! $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
+      http_alias => $http->{'http_alias'},
       youtube_api_key => $config->getconf('youtube_api_key'),
       imgur_clientid => $config->getconf('imgur_clientid'),
       imgur_clientsecret => $config->getconf('imgur_clientsecret'),
@@ -162,7 +191,9 @@ sub _start {
       reddit_secret => $config->getconf('reddit_secret'),
       twitchtv_clientid => $config->getconf('twitchtv_clientid'),
     )
-  );
+  )) {
+    return 0;
+  }
 
   $irc->plugin_add('MiggyIRCBotAlarmClock',
     MiggyIRCBot::AlarmClock->new()
@@ -182,16 +213,7 @@ sub irc_001 {
   print " irc_001:\n";
 
   # Set mode +x
-  print " Attempt to set usermode +x\n";
   $irc->yield('mode', $config->getconf('nickname') . " +x");
-
-  # Lets authenticate with Quakenet's Q bot
-  my $qauth = $config->getconf('qauth');
-  my $qpass = $config->getconf('qpass');
-  if (defined($qauth) and $qauth ne '' and defined($qpass) and $qpass ne '') {
-    print "  Qauth and Qpass appear set. Attempting Q Auth...\n";
-    $kernel->post( $sender => qbot_auth => $config->getconf('qauth') => $config->getconf('qpass') );
-  }
 
   return;
 }
@@ -323,8 +345,10 @@ mylog("irc_sc_crowdfund_error...");
 sub handle_rss_check {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
+  mylog("HANDLE_RSS_CHECK: Triggering 'get_rss_items'");
   $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 1 } );
 
+  mylog("HANDLE_RSS_CHECK: Setting new run after " . $config->getconf('rss_check_time') . " seconds");
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 }
 
@@ -355,7 +379,7 @@ sub irc_miggybot_rss_newitems {
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS:\n";
 
   if (defined($_[ARG1])) {
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
     for my $i (@_[ARG1..$#_]) {
       $irc->yield('privmsg', $reply_to, 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'});
     }

@@ -14,6 +14,7 @@ our %config = (
   'crowdfund_funds_check_time' => 300,
   'crowdfund_url' => 'https://robertsspaceindustries.com/api/stats/getCrowdfundStats',
   'rss_url' => 'https://robertsspaceindustries.com/comm-link/rss',
+  'no_http_proxy' => '',
   'rss_filestore' => 'rss.db',
   'rss_check_time' => 300,
   'qauth' => '',
@@ -63,6 +64,8 @@ sub new {
       $config{'console_password'} = $1;
     } elsif (/^seen_filestore:\s+(.*)$/i) {
       $config{'seen_filestore'} = $1;
+    } elsif (/^no_http_proxy:\s+(.*)$/i) {
+      $config{'no_http_proxy'} = $1;
     } elsif (/^crowdfund_funds_check_time:\s+(.*)$/i) {
       $config{'crowdfund_funds_check_time'} = $1;
     } elsif (/^crowdfund_url:\s+(.*)$/i) {

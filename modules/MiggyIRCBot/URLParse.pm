@@ -48,6 +48,7 @@ my %sites = (
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
 
 printf STDERR "MiggyIRCBot::URLParse->new()\n";
   $youtube_api_key = $args{'youtube_api_key'};
@@ -65,14 +66,8 @@ sub PCI_register {
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
 
   unless ( $self->{http_alias} ) {
-    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
-      #Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
-      FollowRedirects => $self->{follow_redirects},
-    );
+    print STDERR "MiggyIRCBot::URLParse - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
   }
 
   $self->{session_id} = POE::Session->create(
@@ -82,12 +77,15 @@ sub PCI_register {
   )->ID();
   $poe_kernel->state( 'get_url', $self );
 
-  $reddit = MiggyIRCBot::URLParse::Reddit->new(
+  if (! ($reddit = MiggyIRCBot::URLParse::Reddit->new(
+    http_alias          => $self->{'http_alias'},
     reddit_clientid     => $reddit_clientid,
     reddit_secret       => $reddit_secret,
     reddit_username     => $reddit_username,
     reddit_password     => $reddit_password,
-  );
+  ))) {
+    return 0;
+  }
 #printf STDERR "reddit -> %s\n", Dumper($reddit);
 
   return 1;
@@ -171,7 +169,7 @@ sub get_generic {
   # If you don't add the 'Connection: close' header than a HTTP/1.1 server
   # with a long persistent connection timeout will mean you don't actually
   # get your full response until it closes the connection.
-  my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close']);
+  my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 mylog("_GET_GENERIC: '", $args{'url'}, "'");
 #printf STDERR "GET_GENERIC: req is:\n%s\n", $req->as_string();
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
@@ -253,12 +251,12 @@ sub get_youtube_com {
 #printf STDERR "GET_YOUTUBE_COM: video_id = %s\n", $video_id;
   if ($youtube_api_key and $video_id) {
 printf STDERR "GET_YOUTUBE_COM, using API for '%s'\n", $args->{'url'};
-    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key, ['Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api', $req, $args );
   } else {
 printf STDERR "GET_YOUTUBE_COM, using scraping for '%s'\n", $args->{'url'};
     # If not a specific video
-    my $req = HTTP::Request->new('GET', $args->{'url'}, ['Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', $args->{'url'}, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, $args );
   }
 }
@@ -409,7 +407,7 @@ sub get_imgur_image {
 #printf STDERR "GET_IMGUR_IMAGE: image_id = %s\n", $image_id;
   if ($imgur_clientid and $image_id) {
 printf STDERR "GET_IMGUR_IMAGE, using API for '%s' (%s)\n", $args->{'url'}, $image_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_IMGUR_IMAGE: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_image', $req, $args );
   } else {
@@ -505,7 +503,7 @@ sub get_imgur_album {
 printf STDERR "GET_IMGUR_ALBUM: album_id = %s\n", $album_id;
   if ($imgur_clientid and $album_id) {
 printf STDERR "GET_IMGUR_ALBUM, using API for '%s' (%s)\n", $args->{'url'}, $album_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_IMGUR_ALBUM: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_album', $req, $args );
   } else {
@@ -592,7 +590,7 @@ sub get_imgur_gallery {
 printf STDERR "GET_IMGUR_GALLERY: gallery_id = %s\n", $gallery_id;
   if ($imgur_clientid and $gallery_id) {
 printf STDERR "GET_IMGUR_GALLERY, using API for '%s' (%s)\n", $args->{'url'}, $gallery_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/gallery/" . $gallery_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/gallery/" . $gallery_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_IMGUR_GALLERY: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_gallery', $req, $args );
   } else {
@@ -724,6 +722,40 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: matches regex\n";
     if (defined($+{'ship_name'})) {
       my $sn = $+{'ship_name'};
+      my %ship_names = (
+        'adder' => 'Adder',
+        'anaconda' => 'Anaconda',
+        'asp' => 'Asp Explorer',
+        'asp_count' => 'Asp Scout',
+        'cobra_mk_iii' => 'Cobra Mk III',
+        'cobra_mk_iv' => 'Cobra Mk IV',
+        'diamondback_explorer' => 'Diamondback Explorer',
+        'diamondback_scout' => 'Diamondback Scout',
+        'eagle' => 'Eagle',
+        'federal_assault_ship' => 'Federal Assault Ship',
+        'federal_corvette' => 'Federal Corvette',
+        'federal_dropship' => 'Federal Dropship',
+        'federal_gunship' => 'Federal Gunship',
+        'fer_de_lance' => 'Fer de Lance',
+        'hauler' => 'Hauler',
+        'imperial_clipper' => 'Imperial Clipper',
+        'imperial_courier' => 'Imperial Courier',
+        'imperial_cutter' => 'Imperial Cutter',
+        'imperial_eagle' => 'Imperial Eagle',
+        'keelback' => 'Keelback',
+        'orca' => 'Orca',
+        'python' => 'Python',
+        'sidewinder' => 'Sidewinder',
+        'type_6_transporter' => 'Type-6 Transporter',
+        'type_7_transporter' => 'Type-7 Transporter',
+        'type_9_heavy' => 'Type-9 Heavy',
+        'viper' => 'Viper Mk III',
+        'viper_mk_iv' => 'Viper Mk IV',
+        'vulture' => 'Vulture',
+      );
+      if (defined($ship_names{lc($sn)})) {
+        $sn = $ship_names{lc($sn)};
+      }
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got ship_name\n";
       if (defined($+{'build_name'})) {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got build_name\n";
@@ -774,13 +806,13 @@ sub get_twitch_tv {
 #printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
   if ($twitchtv_clientid and $channel_name) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $channel_name;
-    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/streams/" . $channel_name, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/streams/" . $channel_name, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
     $args->{'_channel_name'} = $channel_name;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
   } elsif ((undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)\/(.+)\/([0-9]+)$/) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $video_pre, $video_id;
-    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $args->{'_channel_name'} = $channel_name;
     $args->{'_video_pre'} = $video_pre;
     $args->{'_video_id'} = $video_id;
@@ -822,7 +854,7 @@ printf STDERR "PARSE_TWITCH_TV_STREAM: error!\n";
         push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'message'};
       } elsif (!defined($json->{'stream'})) {
 printf STDERR "PARSE_TWITCH_TV_STREAM: No stream, offline?  Trying for channel info instead.\n";
-        my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/channels/" . $args->{'_channel_name'}, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+        my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/channels/" . $args->{'_channel_name'}, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "PARSE_TWITCH_TV_STREAM: channel req is:\n%s\n", $req->as_string();
         $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_channel', $req, $args );
         return undef;
@@ -994,6 +1026,8 @@ sub prettyprint {
 sub trunc_str {
   my ($line, $len) = @_;
 
+  $line =~ s/^[[:space:]]+//;
+  $line =~ s/[[:space:]]+$//;
   if (length($line) <= $len) {
     return $line;
   }

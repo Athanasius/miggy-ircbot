@@ -23,16 +23,12 @@ sub PCI_register {
   my ($self,$irc) = @_;
   $self->{irc} = $irc;
   $irc->plugin_register( $self, 'SERVER', qw(spoof) );
-  unless ( $self->{http_alias} ) {   
-    $self->{http_alias} = join('-', 'ua-miggyircbot', $irc->session_id() );
-    $self->{follow_redirects} ||= 2;
-    POE::Component::Client::HTTP->spawn(
-      Alias           => $self->{http_alias},
-      Agent           => 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
-      Timeout         => 30,
-      FollowRedirects => $self->{follow_redirects},
-    );
+
+  unless ( $self->{http_alias} ) {
+    print STDERR "MiggyIRCBot::Crowdfund - Must have an http_alias set up via MiggyIRCBot::HTTP\n";
+    return undef;
   }
+
   $self->{session_id} = POE::Session->create(
     object_states => [
       $self => [ qw(_shutdown _start _get_crowdfund _parse_crowdfund ) ],
