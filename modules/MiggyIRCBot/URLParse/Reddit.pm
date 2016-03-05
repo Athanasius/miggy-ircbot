@@ -75,7 +75,7 @@ printf STDERR "_GET_REDDIT_AUTH_TOKEN: Requesting new token...\n";
   $heap->{_channel} = $args{'_channel'};
   my $h = HTTP::Headers->new;
   $h->authorization_basic($reddit_clientid, $reddit_secret);
-  $h->header("Connection" => "close");
+  $h->header('Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7');
   my $req = HTTP::Request->new('POST', 'https://www.reddit.com/api/v1/access_token', $h, 'grant_type=password&username=' . $reddit_username . '&password=' . $reddit_password);
 #printf STDERR "_GET_REDDIT_AUTH_TOKEN: Request = '%s'\n", Dumper($req);
   $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_auth_token', $req, \%args);
@@ -162,11 +162,11 @@ printf STDERR "_GET_REDDIT_URL_INFO: Url '%s'\n", $args{'url'};
   my (undef, $link, $req);
   if ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/([^\/]+)/) {
 #printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/by_id/t3_' . $link, ["Authorization" => "bearer " . $reddit_token, "Connection" => "close", 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7' ] );
 #printf STDERR "_GET_REDDIT_URL_INFO: Request = '%s'\n", Dumper($req);
   } elsif ((undef, $link) = $args{'url'} =~ /^http(s)?:\/\/.+\.reddit\.com\/r\/([^\/]+)/) {
 printf STDERR "Url '%s', Link '%s'\n", $args{'url'}, $link;
-    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/r/' . $link . '/about', ["Authorization" => "bearer " . $reddit_token, "Connection" => "close" ] );
+    $req = HTTP::Request->new('GET', 'https://oauth.reddit.com/r/' . $link . '/about', ["Authorization" => "bearer " . $reddit_token, "Connection" => "close", 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7' ] );
   }
   $kernel->post( $self->{http_alias}, 'request', '_parse_reddit_url_info', $req, \%args);
 

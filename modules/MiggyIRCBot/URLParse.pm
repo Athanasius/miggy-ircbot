@@ -250,12 +250,12 @@ sub get_youtube_com {
 #printf STDERR "GET_YOUTUBE_COM: video_id = %s\n", $video_id;
   if ($youtube_api_key and $video_id) {
 printf STDERR "GET_YOUTUBE_COM, using API for '%s'\n", $args->{'url'};
-    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key, ['Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api', $req, $args );
   } else {
 printf STDERR "GET_YOUTUBE_COM, using scraping for '%s'\n", $args->{'url'};
     # If not a specific video
-    my $req = HTTP::Request->new('GET', $args->{'url'}, ['Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', $args->{'url'}, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, $args );
   }
 }
@@ -406,7 +406,7 @@ sub get_imgur_image {
 #printf STDERR "GET_IMGUR_IMAGE: image_id = %s\n", $image_id;
   if ($imgur_clientid and $image_id) {
 printf STDERR "GET_IMGUR_IMAGE, using API for '%s' (%s)\n", $args->{'url'}, $image_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/image/" . $image_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_IMGUR_IMAGE: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_image', $req, $args );
   } else {
@@ -502,7 +502,7 @@ sub get_imgur_album {
 printf STDERR "GET_IMGUR_ALBUM: album_id = %s\n", $album_id;
   if ($imgur_clientid and $album_id) {
 printf STDERR "GET_IMGUR_ALBUM, using API for '%s' (%s)\n", $args->{'url'}, $album_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/album/" . $album_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_IMGUR_ALBUM: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_album', $req, $args );
   } else {
@@ -589,7 +589,7 @@ sub get_imgur_gallery {
 printf STDERR "GET_IMGUR_GALLERY: gallery_id = %s\n", $gallery_id;
   if ($imgur_clientid and $gallery_id) {
 printf STDERR "GET_IMGUR_GALLERY, using API for '%s' (%s)\n", $args->{'url'}, $gallery_id;
-    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/gallery/" . $gallery_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.imgur.com/3/gallery/" . $gallery_id, ['Authorization' => 'Client-ID ' . $imgur_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_IMGUR_GALLERY: req is:\n%s\n", $req->as_string();
     $kernel->post( $self->{http_alias}, 'request', 'parse_imgur_gallery', $req, $args );
   } else {
@@ -805,13 +805,13 @@ sub get_twitch_tv {
 #printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
   if ($twitchtv_clientid and $channel_name) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $channel_name;
-    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/streams/" . $channel_name, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/streams/" . $channel_name, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
     $args->{'_channel_name'} = $channel_name;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
   } elsif ((undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)\/(.+)\/([0-9]+)$/) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $video_pre, $video_id;
-    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $args->{'_channel_name'} = $channel_name;
     $args->{'_video_pre'} = $video_pre;
     $args->{'_video_id'} = $video_id;
@@ -853,7 +853,7 @@ printf STDERR "PARSE_TWITCH_TV_STREAM: error!\n";
         push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'message'};
       } elsif (!defined($json->{'stream'})) {
 printf STDERR "PARSE_TWITCH_TV_STREAM: No stream, offline?  Trying for channel info instead.\n";
-        my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/channels/" . $args->{'_channel_name'}, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close']);
+        my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/channels/" . $args->{'_channel_name'}, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
 #printf STDERR "PARSE_TWITCH_TV_STREAM: channel req is:\n%s\n", $req->as_string();
         $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_channel', $req, $args );
         return undef;

@@ -111,7 +111,7 @@ sub _get_rss_items {
   }
   $args{lc $_} = delete $args{$_} for grep { !/^_/ } keys %args;
   mylog("_GET_RSS_ITEMS: posting to http_alias");
-  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new('GET', $rss_url, ['Connection' => 'close'] ), \%args );
+  $kernel->post( $self->{http_alias}, 'request', '_parse_rss_items', HTTP::Request->new('GET', $rss_url, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7'] ), \%args );
   undef;
 }
 
