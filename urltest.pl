@@ -5,6 +5,7 @@ use strict;
 use POE;
 use POE::Component::IRC;
 use MiggyIRCBot::ConfigFile;
+use MiggyIRCBot::HTTP;
 use MiggyIRCBot::URLParse;
 use POSIX qw/strftime/;
 use Data::Dumper;
@@ -15,6 +16,7 @@ if (!defined($config)) {
 }
 
 my $irc = POE::Component::IRC->spawn();
+my $http;
 
 POE::Session->create(
   package_states => [
@@ -32,8 +34,14 @@ $poe_kernel->run();
 sub _start {
   my ($kernel, $heap, $session) = @_[KERNEL, HEAP, SESSION];
 
+  $irc->plugin_add('MiggyIRCBotHTTP',
+    $http = MiggyIRCBot::HTTP->new(
+      no_http_proxy => $config->getconf('no_http_proxy')
+    )
+  );
   $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
+      http_alias => $http->{'http_alias'},
       youtube_api_key => $config->getconf('youtube_api_key'),
       imgur_clientid => $config->getconf('imgur_clientid'),
       imgur_clientsecret => $config->getconf('imgur_clientsecret'),
