@@ -178,7 +178,9 @@ sub _start {
   $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
 
   $irc->plugin_add('SCURLParse',
-    MiggyIRCBot::URLParse->new()
+    MiggyIRCBot::URLParse->new(
+      http_alias => $http->{'http_alias'}
+    )
   );
 
   if (! $irc->plugin_add('MiggyIRCBotURLParse',
