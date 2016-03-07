@@ -15,6 +15,7 @@ my $last_cf = { 'funds' => 0 };
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
 
 	return $self;
 }

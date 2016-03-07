@@ -168,7 +168,9 @@ sub _start {
   $kernel->delay('rss_check', $config->getconf('rss_check_time'));
 
   $irc->plugin_add('SCCrowdfund',
-    MiggyIRCBot::Crowdfund->new()
+    MiggyIRCBot::Crowdfund->new(
+      http_alias => $http->{'http_alias'}
+    )
   );
   # Get Crowdfund::$last_cf initialised
   $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 1 } );
