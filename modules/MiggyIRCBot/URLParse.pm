@@ -802,7 +802,7 @@ sub get_twitch_tv {
   my ($kernel, $self, $args) = @_;
 #printf STDERR "GET_TWITCH_TV\n";
 
-  my (undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)(\/dashboard)?$/;
+  my (undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)(\/|\/dashboard)?$/;
 #printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
   if ($twitchtv_clientid and $channel_name) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $channel_name;
