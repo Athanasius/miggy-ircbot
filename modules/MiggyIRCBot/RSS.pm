@@ -206,7 +206,7 @@ sub _get_rss_latest {
   my @params;
   push @params, $args{session};
 
-  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 10");
+  my $sth = $rss_db->prepare("SELECT * FROM rss_items ORDER BY id DESC LIMIT 1");
 #printf STDERR "_GET_RSS_LATEST: Executing query\n";
   my $res = $sth->execute();
   my $pushed;
