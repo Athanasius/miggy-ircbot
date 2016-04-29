@@ -380,14 +380,15 @@ sub parse_youtube_com {
 sub youtube_parse_duration {
   my $d = shift;
 
-  # PT2H7M20S
-  my ($hstring, $hour, $min, $sec) = $d =~ /^PT(([0-9]+)H)?([0-9]+)M([0-9]+)S$/;
-#printf STDERR "youtube_parse_duration: Duration '%s' %s %s %s %s\n", $d, $hstring, $hour, $min, $sec;
-  if (!defined($min)) {
-printf STDERR "Can't find minute in Duration '%s' %s, %s, %s, %s\n", $d, $hstring, $hour, $min, $sec;
+  # PT2H7M20S PT31S
+  $d =~ /^PT((?<hours>[0-9]+)H)?((?<minutes>[0-9]+)M)?(?<seconds>[0-9]+)S$/;
+  my ($hour, $min, $sec) = ($+{'hours'}, $+{'minutes'}, $+{'seconds'});
+#printf STDERR "youtube_parse_duration: Duration '%s' %s %s %s %s\n", $d, $hour, $min, $sec;
+  if (!defined($hour) and !defined($min) and !defined($sec)) {
+printf STDERR "Couldn't find at least one of hour/min/sec in Duration '%s' %s, %s, %s, %s\n", $d, $hour, $min, $sec;
     return "";
   }
-  if ($min >= 60) {
+  if (defined($min) and $min >= 60) {
     $hour = int($min / 60);
     $min -= $hour * 60;
   } elsif (!defined($hour)) {
