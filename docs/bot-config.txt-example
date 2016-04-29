@@ -1,20 +1,53 @@
-ircserver: some.irc.server
-ircport: 6667
-nickname: SomeBot
-channel: #SomeIRCChannel
-ready_message: Ready for action!
-console_port: 3337
-crowdfund_funds_check_time: 300
-# Set this as per NoProxy in POE::Component::Client::HTTP docs
-no_http_proxy: 0.0.0.0
-rss_check_time: 900
-qauth: Some Q Auth
-qpass: Some Q Password
-youtube_api_key: See <https://developers.google.com/youtube/v3/getting-started>
-imgur_clientid: See <https://api.imgur.com/endpoints>
-imgur_clientsecret: See <https://api.imgur.com/endpoints>
-reddit_clientid: See <https://github.com/reddit/reddit/wiki/OAuth2>
-reddit_secret: See <https://github.com/reddit/reddit/wiki/OAuth2>
-reddit_username: See <https://github.com/reddit/reddit/wiki/OAuth2>
-reddit_password: See <https://github.com/reddit/reddit/wiki/OAuth2>
-twitchtv_clientid: See <https://github.com/justintv/Twitch-API/blob/master/authentication.md>
+<BotConfig>
+  <Irc>
+    NickName "SomeBot"
+    IrcName "A friendly boy - email@address"
+    <Server>
+      Name "irc.server.example.com"
+      Port 6667
+      ConnectDelay 60
+      <Auth>
+        Type "Q" # For QuakeNet
+        Name "HeyQ"
+        Password "MySecret"
+      </Auth>
+    </Server>
+  </Irc>
+  <Channel>
+    Name "#SomeIRCChannel"
+    ReadyMessage "Ready for action!"
+  </Channel>
+  <Http>
+    #SetEnv no_http_proxy ""
+  </Http>
+  <Seen>
+    FileStore "seen_filestore.db"
+  </Seen>
+  <Rss>
+    <Feed>
+      Name "Athan's Unofficial FD Dev RSS Feed"
+      Url "https://miggy.org/games/elite-dangerous/devtracker/ed-dev-posts.rss"
+      CheckInterval 300
+      FileStore "rss.db"
+    </Feed>
+  </Rss>
+  <UrlParser>
+    <YouTube>
+      ApiKey "See <https://developers.google.com/youtube/v3/getting-started>"
+    </YouTube>
+    <Imgur>
+      ClientId "See <https://api.imgur.com/endpoints>"
+      ClientSecret "See <https://api.imgur.com/endpoints>"
+    </Imgur>
+    <Reddit>
+      ClientId "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      ClientSecret "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      UserName "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      Password "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      AuthorizationRedirect ""
+    </Reddit>
+    <Twitch>
+      ClientId "See <https://github.com/justintv/Twitch-API/blob/master/authentication.md>"
+    </Twitch>
+  </UrlParser>
+</BotConfig>

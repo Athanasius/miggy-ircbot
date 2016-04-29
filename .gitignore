@@ -2,6 +2,7 @@
 .*.swp
 seen_filestore.db
 bot-config.txt
+bot.cfg
 event.log
 rss.db
 test.log

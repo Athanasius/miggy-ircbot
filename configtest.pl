@@ -17,7 +17,7 @@ if (! $config) {
 #print Dumper(\%ENV);
 
 #print Dumper($config->conf->block("BotConfig")), "\n";
-my $nickname = $config->irc("NickName");
+my $nickname = $config->NickName;
 if ($nickname) {
   printf "NickName: %s\n", $nickname;
 } else {
