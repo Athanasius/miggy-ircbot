@@ -9,7 +9,7 @@ use POE::Component::IRC::Qnet::State;
 use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Qnet::Auth;
 use POE::Component::IRC::Plugin::AutoJoin;
-use POE::Component::IRC::Plugin::Console;
+#use POE::Component::IRC::Plugin::Console;
 use POE::Component::IRC::Plugin::Seen;
 use POE::Component::IRC::Plugin::BotCommand;
 
@@ -23,7 +23,7 @@ use POSIX qw/strftime/;
 use Data::Dumper;
 #use Devel::StackTrace;
 
-my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
+my $config = MiggyIRCBot::ConfigFile->new(file => "bot.cfg");
 if (!defined($config)) {
   die "No config!";
 }
@@ -111,55 +111,54 @@ sub _start {
   $irc->plugin_add( 'Connector' => $heap->{connector} );
 
   $irc->yield ( connect => {
-      Nick => $config->conf->('nickname'),
-      Server => $config->getconf('ircserver'),
-      Port => $config->getconf('ircport'),
-      Ircname => $config->getconf('ircname'),
+      Nick => $config->NickName,
+      Server => $config->ServerName,
+      Port => $config->ServerPort,
+      Ircname => $config->IrcName
     }
   );
 
-  $irc->plugin_add( 'Console',
-    POE::Component::IRC::Plugin::Console->new(
-      bindport => $config->getconf('console_port'),
-      password => $config->getconf('console_password'),
-    )
-  );
-  if ($config->getconf('ircserver') =~ /\.quakenet\.org$/i
-    and defined($config->getconf('qauth')) and defined($config->getconf('qpass'))) {
+#  $irc->plugin_add( 'Console',
+#    POE::Component::IRC::Plugin::Console->new(
+#      bindport => $config->getconf('console_port'),
+#      password => $config->getconf('console_password'),
+#    )
+#  );
+  if ($config->ServerName =~ /\.quakenet\.org$/i
+    and defined($config->ServerAuth->get('Type')) and $config->ServerAuth->get('Type') eq 'Q'
+    and defined($config->ServerAuth->get('Name')) and defined($config->ServerAuth->get('Password'))) {
     $irc->plugin_add('Qnet::Auth',
       POE::Component::IRC::Qnet::Auth->new(
-        'AuthName' => $config->getconf('qauth'),
-        'Password' => $config->getconf('qpass')
+        'AuthName' => $config->ServerAuth->get('Name'),
+        'Password' => $config->ServerAuth->get('Password')
       )
     );
   }
   $irc->plugin_add('AutoJoin',
     POE::Component::IRC::Plugin::AutoJoin->new(
-      Channels => [ $config->getconf('channel') ],
+      Channels => [ $config->Channel->get('Name') ],
       NickServ_delay => 60,
     )
   );
   $irc->plugin_add('Seen',
     POE::Component::IRC::Plugin::Seen->new(
-      filename => $config->getconf('seen_filestore')
+      filename => $config->Seen->get('FileStore')
     )
   );
 
   $irc->plugin_add('MiggyIRCBotHTTP',
-    $http = MiggyIRCBot::HTTP->new(
-      no_http_proxy => $config->getconf('no_http_proxy')
-    )
+    $http = MiggyIRCBot::HTTP->new()
   );
   if (! $irc->plugin_add('MiggyIRCBotRSS',
     MiggyIRCBot::RSS->new(
       http_alias => $http->{'http_alias'},
-      rss_url => $config->getconf('rss_url'),
-      rss_file => $config->getconf('rss_filestore')
+      rss_url => $config->Rss->block('Feed')->get('Url'),
+      rss_file => $config->Rss->block('Feed')->get('FileStore')
     )
   )) {
     return 0;
   }
-  $kernel->delay('rss_check', $config->getconf('rss_check_time'));
+  $kernel->delay('rss_check', $config->Rss->block('Feed')->get('CheckInterval'));
 
   $irc->plugin_add('SCCrowdfund',
     MiggyIRCBot::Crowdfund->new(
@@ -180,14 +179,14 @@ sub _start {
   if (! $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
       http_alias => $http->{'http_alias'},
-      youtube_api_key => $config->getconf('youtube_api_key'),
-      imgur_clientid => $config->getconf('imgur_clientid'),
-      imgur_clientsecret => $config->getconf('imgur_clientsecret'),
-      reddit_username => $config->getconf('reddit_username'),
-      reddit_password => $config->getconf('reddit_password'),
-      reddit_clientid => $config->getconf('reddit_clientid'),
-      reddit_secret => $config->getconf('reddit_secret'),
-      twitchtv_clientid => $config->getconf('twitchtv_clientid'),
+      youtube_api_key => $config->UrlParser->block('YouTube')->get('ApiKey'),
+      imgur_clientid => $config->UrlParser->block('Imgur')->get('ClientId'),
+      imgur_clientsecret => $config->UrlParser->block('Imgur')->get('ClientSecret'),
+      reddit_username => $config->UrlParser->block('Reddit')->get('UserName'),
+      reddit_password => $config->UrlParser->block('Reddit')->get('Password'),
+      reddit_clientid => $config->UrlParser->block('Reddit')->get('ClientId'),
+      reddit_secret => $config->UrlParser->block('Reddit')->get('ClientSecret'),
+      twitchtv_clientid => $config->UrlParser->block('Twitch')->get('ClientId'),
     )
   )) {
     return 0;
@@ -211,7 +210,7 @@ sub irc_001 {
   print " irc_001:\n";
 
   # Set mode +x
-  $irc->yield('mode', $config->getconf('nickname') . " +x");
+  $irc->yield('mode', $irc->nick_name . " +x");
 
   return;
 }
@@ -225,7 +224,7 @@ sub irc_join {
   # only send the message if we were the one joining
   if ($nick eq $irc->nick_name()) {
     #print "irc_join - It's me! Sending greeting...\n";
-    $irc->yield(privmsg => $channel, $config->getconf('ready_message'));
+    $irc->yield(privmsg => $channel, $config->Channel->get('ReadyMessage'));
   }
 }
 
@@ -236,11 +235,11 @@ sub irc_invite {
   my $irc = $_[SENDER]->get_heap();
 
   printf "irc_invite - Nick: '%s', Channel: '%s'\n", $nick, $channel;
-  if ($channel eq $config->getconf('channel')) {
+  if ($channel eq $config->Channel->get('Name')) {
     print " irc_invite: For our channel\n";
     my $on_channel = undef;
     foreach my $c ( keys %{$irc->channels()} ) {
-      if ($c eq $config->getconf('channel')) {
+      if ($c eq $config->Channel->get('Name')) {
         print " irc_invite: We're currently on our channel\n";
         $on_channel = $c;
         last;
@@ -344,10 +343,10 @@ sub handle_rss_check {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
   mylog("HANDLE_RSS_CHECK: Triggering 'get_rss_items'");
-  $kernel->yield('get_rss_items', { _channel => $config->getconf('channel'), _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 1 } );
+  $kernel->yield('get_rss_items', { _channel => $config->Channel->get('Name'), _reply_to => $config->Channel->get('Name'), _errors_to => $config->Channel->get('Name'), session => $session, quiet => 1 } );
 
-  mylog("HANDLE_RSS_CHECK: Setting new run after " . $config->getconf('rss_check_time') . " seconds");
-  $kernel->delay('rss_check', $config->getconf('rss_check_time'));
+  mylog("HANDLE_RSS_CHECK: Setting new run after " . $config->Rss->block('Feed')->get('CheckInterval') . " seconds");
+  $kernel->delay('rss_check', $config->Rss->block('Feed')->get('CheckInterval'));
 }
 
 sub irc_botcmd_rss {
@@ -360,12 +359,12 @@ sub irc_botcmd_rss {
       $kernel->yield('get_rss_latest', { _reply_to => $channel, session => $session, quiet => 0 } );
     }
   } else {
-    unless ($poco->is_channel_operator($config->getconf('channel'), $nick)
-      or $poco->has_channel_voice($config->getconf('channel'), $nick)) {
+    unless ($poco->is_channel_operator($config->Channel->get('Name'), $nick)
+      or $poco->has_channel_voice($config->Channel->get('Name'), $nick)) {
       return;
     }
-    $irc->yield('privmsg', $config->getconf('channel'), "Running RSS query, please wait ...");
-    $kernel->yield('get_rss_items', { _reply_to => $config->getconf('channel'), _errors_to => $config->getconf('channel'), session => $session, quiet => 0 } );
+    $irc->yield('privmsg', $config->Channel->get('Name'), "Running RSS query, please wait ...");
+    $kernel->yield('get_rss_items', { _reply_to => $config->Channel->get('Name'), _errors_to => $config->Channel->get('Name'), session => $session, quiet => 0 } );
   }
 }
 
@@ -508,7 +507,7 @@ sub irc_botcmd_alarm {
 
 sub irc_miggybot_alarm_announce {
   my ($kernel, $sender, $alarmtag, $alarm, $pre) = @_[KERNEL, SENDER, ARG0, ARG1, ARG2];
-  my $channel = $config->getconf('channel');
+  my $channel = $config->Channel->get('Name');
 
   #printf STDERR "irc_miggybot_alarm_announce: alarm = %s\n", Dumper($alarm);
   if (defined($pre)) {

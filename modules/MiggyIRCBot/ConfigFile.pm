@@ -1,36 +1,21 @@
 package MiggyIRCBot::ConfigFile;
 
 require Exporter;
-@EXPORT = qw(&config %irc);
+@EXPORT = qw(&config &irc
+  &NickName
+  &IrcName
+  &ServerName
+  &ServerPort
+  &ServerConnectDelay
+  &ServerAuth
+  &Channel
+  &Http
+  &SeenFileStore
+  &Rss
+  &UrlParser
+);
 
 use Config::ApacheFormat;
-
-### our %config = (
-###   'nickname' => 'Cmdr^Jameson',
-###   'ircname' => 'Commander Jameson - *the* original commander',
-###   'channel' => '#elite-dangerous',
-###   'ircserver' => 'irc.quakenet.org',
-###   'ircport' => 6667,
-###   'connect_delay' => 60,
-###   'ready_message' => 'Reporting for duty!',
-###   'console_port' => 3337,
-###   'console_password' => 'UnwindLamps',
-###   'seen_filestore' => 'seen_filestore.db',
-###   'no_http_proxy' => '',
-###   'rss_url' => 'https://miggy.org/games/elite-dangerous/devtracker/ed-dev-posts.rss',
-###   'rss_filestore' => 'rss.db',
-###   'rss_check_time' => 300,
-###   'qauth' => '',
-###   'qpass' => '',
-###   'youtube_api_key' => '',
-###   'imgur_clientid' => '',
-###   'imgur_clientsecret' => '',
-###   'reddit_clientid' => '',
-###   'reddit_secret' => '',
-###   'reddit_username' => '',
-###   'reddit_password' => '',
-###   'reddit_authorization_redirect' => '',
-### );
 
 sub new {
   my ($class, %args) = @_;
@@ -94,22 +79,88 @@ sub config {
   return $self->{config};
 }
 
-sub irc {
-  my $self = shift;
-  my $field = shift;
-
-  my $irc = $self->{botconfig}->block('Irc');
-  return $irc->get($field);
-}
-
 ########################################################################
 # Per-Field retrieval
 ########################################################################
-sub nickname {
+## BotConfig -> Irc
+sub NickName {
   my $self = shift;
 
   return $self->{botconfig}->block('Irc')->get('NickName');
 }
+
+sub IrcName {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Irc')->get('IrcName');
+}
+
+## BotConfig -> Irc -> Server
+sub ServerName {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Irc')->block('Server')->get('Name');
+}
+
+sub ServerPort {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Irc')->block('Server')->get('Port');
+}
+
+sub ServerConnectDelay {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Irc')->block('Server')->get('ConnectDelay');
+}
+
+## BotConfig -> Irc -> Server -> Auth
+sub ServerAuth {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Irc')->block('Server')->block('Auth');
+}
+
+## BotConfig -> Channel
+sub Channel {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Channel');
+}
+
+## BotConfig -> Http
+sub Http {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Irc')->block('Http');
+}
+
+## BotConfig -> Seen
+sub Seen {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Seen');
+}
+
+## BotConfig -> Rss
+sub Rss {
+  my $self = shift;
+
+  return $self->{botconfig}->block('Rss');
+}
+
+## BotConfig -> Rss -> Feed
+## BotConfig -> UrlParser
+## BotConfig -> Channel
+sub UrlParser {
+  my $self = shift;
+
+  return $self->{botconfig}->block('UrlParser');
+}
+## BotConfig -> UrlParser -> Youtube
+## BotConfig -> UrlParser -> Imgur
+## BotConfig -> UrlParser -> Reddit
+## BotConfig -> UrlParser -> Twitch
 ########################################################################
 
 1;
