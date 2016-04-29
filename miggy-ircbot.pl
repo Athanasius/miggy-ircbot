@@ -305,7 +305,7 @@ sub irc_botcmd_crowdfund {
 sub handle_crowdfund_check_threshold {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  $kernel->yield('get_crowdfund', { _channel => $config->Channel->get('Name'), session => $session, crowdfund_url => $config->CrowdFund->('Url'), autocheck => 1, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->Channel->get('Name'), session => $session, crowdfund_url => $config->CrowdFund->get('Url'), autocheck => 1, quiet => 0 } );
 
   $kernel->delay('crowdfund_check_threshold', $config->CrowdFund->get('CheckInterval'));
 }
