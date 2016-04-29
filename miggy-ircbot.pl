@@ -27,12 +27,6 @@ my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
 if (!defined($config)) {
   die "No config!";
 }
-# We don't want no proxy
-if (defined($config->getconf('no_env_http_proxy')) and lc($config->getconf('no_env_http_proxy')) eq 'true') {
-printf STDERR "no_env_http_proxy is 'true', nuking HTTP_PROXY and http_proxy in ENV\n";
-  $ENV{'HTTP_PROXY'} = undef;
-  $ENV{'http_proxy'} = undef;
-}
 
 my $irc = POE::Component::IRC::Qnet::State->spawn();
 my $http;
@@ -117,7 +111,7 @@ sub _start {
   $irc->plugin_add( 'Connector' => $heap->{connector} );
 
   $irc->yield ( connect => {
-      Nick => $config->getconf('nickname'),
+      Nick => $config->conf->('nickname'),
       Server => $config->getconf('ircserver'),
       Port => $config->getconf('ircport'),
       Ircname => $config->getconf('ircname'),
