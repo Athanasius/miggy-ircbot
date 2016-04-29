@@ -13,6 +13,7 @@ require Exporter;
   &SeenFileStore
   &Rss
   &UrlParser
+  &CrowdFund
 );
 
 use Config::ApacheFormat;
@@ -42,6 +43,7 @@ sub new {
           Imgur
           Reddit
           Twitch
+        CrowdFund
     ) ],
     valid_directives => [ qw (
       SetEnv
@@ -151,16 +153,23 @@ sub Rss {
 
 ## BotConfig -> Rss -> Feed
 ## BotConfig -> UrlParser
-## BotConfig -> Channel
 sub UrlParser {
   my $self = shift;
 
   return $self->{botconfig}->block('UrlParser');
 }
+
 ## BotConfig -> UrlParser -> Youtube
 ## BotConfig -> UrlParser -> Imgur
 ## BotConfig -> UrlParser -> Reddit
 ## BotConfig -> UrlParser -> Twitch
+## BotConfig -> CrowdFund
+sub CrowdFund {
+  my $self = shift;
+
+  return $self->{botconfig}->block('CrowdFund');
+}
+
 ########################################################################
 
 1;

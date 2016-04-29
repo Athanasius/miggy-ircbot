@@ -23,7 +23,7 @@ use POSIX qw/strftime/;
 use Data::Dumper;
 #use Devel::StackTrace;
 
-my $config = MiggyIRCBot::ConfigFile->new(file => "bot.cfg");
+my $config = MiggyIRCBot::ConfigFile->new(file => "bot.conf");
 if (!defined($config)) {
   die "No config!";
 }
@@ -166,9 +166,9 @@ sub _start {
     )
   );
   # Get Crowdfund::$last_cf initialised
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 1 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->Channel->get('Name'), session => $session, crowdfund_url => $config->CrowdFund->get('Url'), autocheck => 1, quiet => 1 } );
   # And set up the delayed check
-  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+  $kernel->delay('crowdfund_check_threshold', $config->CrowdFund->get('CheckInterval'));
 
   $irc->plugin_add('SCURLParse',
     MiggyIRCBot::URLParse->new(
@@ -298,16 +298,16 @@ sub irc_botcmd_crowdfund {
 #    return;
 #  }
   $irc->yield('privmsg', $channel, "Running crowdfund query, please wait ...");
-  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 0, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $channel, session => $session, crowdfund_url => $config->CrowdFund->get('Url'), autocheck => 0, quiet => 0 } );
 }
 
 ### Function to check current/last crowdfund against thresholds
 sub handle_crowdfund_check_threshold {
   my ($kernel, $session) = @_[KERNEL, SESSION];
 
-  $kernel->yield('get_crowdfund', { _channel => $config->getconf('channel'), session => $session, crowdfund_url => $config->getconf('crowdfund_url'), autocheck => 1, quiet => 0 } );
+  $kernel->yield('get_crowdfund', { _channel => $config->Channel->get('Name'), session => $session, crowdfund_url => $config->CrowdFund->('Url'), autocheck => 1, quiet => 0 } );
 
-  $kernel->delay('crowdfund_check_threshold', $config->getconf('crowdfund_funds_check_time'));
+  $kernel->delay('crowdfund_check_threshold', $config->CrowdFund->get('CheckInterval'));
 }
 
 sub irc_sc_crowdfund_success {
