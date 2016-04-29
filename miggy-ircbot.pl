@@ -22,7 +22,7 @@ use POSIX qw/strftime/;
 use Data::Dumper;
 #use Devel::StackTrace;
 
-my $config = MiggyIRCBot::ConfigFile->new(file => "bot.cfg");
+my $config = MiggyIRCBot::ConfigFile->new(file => "bot.conf");
 if (!defined($config)) {
   die "No config!";
 }
