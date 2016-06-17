@@ -289,8 +289,8 @@ sub irc_miggybot_rss_newitems {
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item with permaLink '%s'\n", $i->{'permaLink'};
       # https://forums.frontier.co.uk/showthread.php?t=101801&p=3541911#post3541911
       if ($i->{'permaLink'} =~ /http(s)?:\/\/forums\.frontier\.co\.uk\/showthread\.php\?t=(?<t>[0-9]+)(&p=(?<p>[0-9]+)#post(?<post>[0-9]+))?$/
-        or $i->{'permaLink'} =~ /http(s)?:\/\/forums\.frontier\.co\.uk\/showthread\.php\/(?<t>[0-9]+)-.+\?(p=(?<p>[0-9]+)#post(?<post>[0-9]+))?$/) {
-printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n";
+        or $i->{'permaLink'} =~ /http(s)?:\/\/forums\.frontier\.co\.uk\/showthread\.php\/(?<t>[0-9]+)-.+(\?p=(?<p>[0-9]+)#post(?<post>[0-9]+))?$/) {
+#printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n";
         my $post;
         if (defined($+{'p'})) {
           $post = $+{'p'};
@@ -304,7 +304,9 @@ printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item has a Frontier Forums permaLink\n
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Item topic HAS been seen already in this set\n";
           push @{$topics{$+{'t'}}}, { 'guid' => $i->{'permaLink'}, 'title' => $i->{'title'}, 'post' => $post };
         }
-      }
+      }# else {
+#        printf STDERR "Not a Frontier Forums URL: %s\n", $i->{'permaLink'};
+#      }
     }
     foreach my $t (keys(%topics)) {
 #printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Considering topic '%s'\n%s\n", $t, Dumper($topics{$t});
