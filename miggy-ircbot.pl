@@ -160,21 +160,26 @@ sub _start {
   }
   $kernel->delay('rss_check', $config->Rss->block('Feed')->get('CheckInterval'));
 
-  $irc->plugin_add('SCCrowdfund',
+  if (! $irc->plugin_add('SCCrowdfund',
     MiggyIRCBot::Crowdfund->new(
       http_alias => $http->{'http_alias'}
     )
-  );
+  )) {
+    return 0;
+  }
+
   # Get Crowdfund::$last_cf initialised
   $kernel->yield('get_crowdfund', { _channel => $config->Channel->get('Name'), session => $session, crowdfund_url => $config->CrowdFund->get('Url'), autocheck => 1, quiet => 1 } );
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->CrowdFund->get('CheckInterval'));
 
-  $irc->plugin_add('SCURLParse',
+  if ($irc->plugin_add('SCURLParse',
     MiggyIRCBot::URLParse->new(
       http_alias => $http->{'http_alias'}
     )
-  );
+  )) {
+    return 0;
+  }
 
   if (! $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
