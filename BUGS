@@ -2,5 +2,7 @@ Known Bugs:
 
 *) BotCommand seems to not even run a command if its terminated with a space, i.e. '!url ' produces no output, whereas '!url' will bitch about lack of argument and '!url <anythign else>' will get checked for URI syntax.
 
+*) https://youtu.be/addme/wU5cw5T_HaEWoxyo-ictXdqjllJnsg confuses the bot. It needs to detect the 'addme/' part of the URL and ignore if found.
+
 FIXED:
   *) !url command needs a URL as an argument, but doesn't complain if you just !url
