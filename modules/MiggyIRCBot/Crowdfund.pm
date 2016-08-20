@@ -15,6 +15,7 @@ my $last_cf = { 'funds' => 0 };
 sub new {
   my ($class, %args) = @_;
 	my $self = bless {}, $class;
+  $self->{'http_alias'} = $args{'http_alias'};
 
 	return $self;
 }
@@ -110,11 +111,11 @@ sub _parse_crowdfund {
   if (! $res->is_success) {
 #printf STDERR "_PARSE_CROWDFUND: res != success: $res->status_line\n";
     ${$new_cf}{'error'} =  "Failed to retrieve crowdfund info: " . $res->status_line;
-    push @params, 'irc_miggybot_crowdfund_error', $args, $new_cf;
+    push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
   } elsif ($res->content !~ /^{".*}$/) {
     printf STDERR "_PARSE_CROWDFUND: Not in JSON Format: '%s'\n", $res->content;
     ${$new_cf}{'error'} =  "Crowdfund info not in JSON format";
-    push @params, 'irc_miggybot_crowdfund_error', $args, $new_cf;
+    push @params, 'irc_sc_crowdfund_error', $args, $new_cf;
   } else {
 #printf STDERR "_PARSE_CROWDFUND: res == success\n";
     my $json = decode_json($res->content);
@@ -134,7 +135,7 @@ sub _parse_crowdfund {
     } elsif ($args->{autocheck} != 1) {
       ${$new_cf}{'report'} = get_current_cf($new_cf);
     }
-    push @params, 'irc_miggybot_crowdfund_success', $args, $new_cf;
+    push @params, 'irc_sc_crowdfund_success', $args, $new_cf;
 #for my $p (@params) { printf STDERR " param = $p\n"; }
     $last_cf = $new_cf;
   }

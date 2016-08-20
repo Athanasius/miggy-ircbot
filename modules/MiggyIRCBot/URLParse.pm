@@ -173,6 +173,7 @@ sub get_generic {
 mylog("_GET_GENERIC: '", $args{'url'}, "'");
 #printf STDERR "GET_GENERIC: req is:\n%s\n", $req->as_string();
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
+  undef;
 }
 
 sub _parse_url {
@@ -193,7 +194,7 @@ printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
     } else {
       $error .=  $res->status_line;
     }
-    push @params, 'irc_miggybot_url_error', $args, $error;
+    push @params, 'irc_sc_url_error', $args, $error;
   } else {
 #printf STDERR "_PARSE_URL: res == success\n";
     # Check if it's a site we have a special handler for
