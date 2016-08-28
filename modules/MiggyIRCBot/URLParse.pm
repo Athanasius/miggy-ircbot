@@ -357,7 +357,9 @@ sub parse_youtube_com {
     }
 
     my $duration = $tree->look_down('_tag' => 'meta', 'itemprop' => 'duration');
-    $blurb .= youtube_parse_duration($duration->attr('content'));
+    if ($duration) {
+      $blurb .= youtube_parse_duration($duration->attr('content'));
+    }
 
     my $interactionCount = $tree->look_down('_tag' => 'meta', 'itemprop' => 'interactionCount');
     if ($interactionCount) {
