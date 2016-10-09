@@ -28,7 +28,7 @@ my %sites = (
   '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
   '^http(s)?:\/\/imgur\.com\/gallery\/([^\.\/]+)$' => {get => \&get_imgur_gallery, parse => \&parse_imgur_gallery },
   '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
-  '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
+  '^http(s)?:\/\/coriolis(\.edcd)?\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/www\.twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
@@ -717,11 +717,13 @@ sub get_coriolis_io_outfit {
   my ($kernel, $self, $args) = @_;
   my @params;
   push @params, $args->{session};
+  my $site = "";
 
 printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
   my $blurb = "";
-  if ($args->{'url'} =~ /^http(s)?:\/\/coriolis\.io\/outfit\/(?<ship_name>[^\/]+)\/[^\?]*(\?bn=(?<build_name>.+))?$/) {
+  if ($args->{'url'} =~ /^http(s)?:\/\/(?<site>coriolis(\.edcd)?\.io)\/outfit\/(?<ship_name>[^\/]+)\/[^\?]*(\?bn=(?<build_name>.+))?$/) {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: matches regex\n";
+    $site = $+{'site'};
     if (defined($+{'ship_name'})) {
       my $sn = $+{'ship_name'};
       my %ship_names = (
@@ -764,18 +766,18 @@ printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
         my $bn = $+{'build_name'};
         # For some reason coriolios.io double-encodes / characters in build names
         $bn =~ s/%252F/\//g;
-        $blurb = "[ " . $sn . " - " . uri_unescape($bn) . " ] - coriolis.io";
+        $blurb = "[ " . $sn . " - " . uri_unescape($bn) . " ] - $site";
       } else {
 #printf STDERR "_GET_CORIOLIS_IO_OUTFIT: but no build_name\n";
-        $blurb = "[ " . $sn . " ] - coriolis.io";
+        $blurb = "[ " . $sn . " ] - $site";
       }
     } else {
 printf STDERR "_GET_CORIOLIS_IO_OUTFIT: no ship_name\n";
-      $blurb =  "[ Coriolis Shipyard ] - coriolis.io";
+      $blurb =  "[ Coriolis Shipyard ] - $site";
     }
   } else {
 printf STDERR "_GET_CORIOLIS_IO_OUTFIT: does NOT match regex\n";
-    $blurb =  "[ Coriolis Shipyard ] - coriolis.io";
+    $blurb =  "[ Coriolis Shipyard ] - $site";
   }
   push @params, 'irc_miggybot_url_success', $args, $blurb;
 
