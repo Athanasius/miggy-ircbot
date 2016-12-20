@@ -72,7 +72,7 @@ sub PCI_register {
 
   $self->{session_id} = POE::Session->create(
     object_states => [
-      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_imgur_image parse_imgur_album parse_imgur_gallery parse_twitch_tv_stream parse_twitch_tv_channel parse_twitch_tv_video ) ],
+      $self => [ qw(_shutdown _start _get_url get_generic _parse_url parse_youtube_api parse_youtube_api_channels parse_youtube_api_channel_live parse_youtube_api_channel_completed parse_youtube_api_channel_upcoming parse_imgur_image parse_imgur_album parse_imgur_gallery parse_twitch_tv_stream parse_twitch_tv_channel parse_twitch_tv_video ) ],
     ],
   )->ID();
   $poe_kernel->state( 'get_url', $self );
@@ -251,7 +251,13 @@ sub get_youtube_com {
   if ($youtube_api_key and $video_id) {
 printf STDERR "GET_YOUTUBE_COM, using API for '%s'\n", $args->{'url'};
     my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $video_id . "&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+    $args->{'videoId'} = $video_id;
     $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api', $req, $args );
+  } elsif ($args->{'url'} =~ /^http(s)?:\/\/www\.youtube\.com\/user\/(?<user>[^\/]+)\/live/) {
+printf STDERR "GET_YOUTUBE_COM, Recognised live stream, trying API\n", $args->{'url'};
+    my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/channels?part=id%2Csnippet%2Cstatus&forUsername=" . $+{'user'}. "&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+printf STDERR "GET_YOUTUBE_COM, query to API: %s\n", $req->as_string;
+    $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api_channels', $req, $args );
   } else {
 printf STDERR "GET_YOUTUBE_COM, using scraping for '%s'\n", $args->{'url'};
     # If not a specific video
@@ -265,12 +271,13 @@ sub parse_youtube_api {
   my $args = $request->[1];
   my @params;
 
-#printf STDERR "PARSE_YOUTUBE_API\n";
+printf STDERR "PARSE_YOUTUBE_API\n";
+#printf STDERR "\targs: %s\n", Dumper($args);
   push @params, $args->{session};
   my $res = $response->[0];
 
   if (! $res->is_success) {
-printf STDERR "PARSE_YOUTUBE_API: res != success: $res->status_line\n";
+printf STDERR "PARSE_YOUTUBE_API: res != success: %s %s\n", $res->code, $res->as_string;
 printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
@@ -287,7 +294,14 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
       push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
     } else {
 #printf STDERR "PARSE_YOUTUBE_API got JSON\n";
-      if (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+      if (defined($json->{'items'}) and !defined($json->{'items'}[0])) { 
+printf STDERR "PARSE_YOUTUBE_API: Got items, but no first element\n";
+        if ($args->{'url'} =~ /http(s?):\/\/www\.youtube\.com\/user\/(?<user>[^\/]+)\/live$/) {
+          push @params, 'irc_miggybot_url_success', $args, "[YouTube] User: " . $+{'user'} . " | Channel not currently live";
+        } else {
+          push @params, 'irc_miggybot_url_error', $args, "No first item";
+        }
+      } elsif (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
 #printf STDERR "PARSE_YOUTUBE_API got items and it contains id\n";
         my $v = $json->{'items'}[0];
 # 21:02:28<EDBot> [YouTube] Title: The Good, The Bad and The Bucky: Highlights from the Buckyball Run | Uploader: Esvandiary | Uploaded: 2015-05-15 00:47:44 UTC | Duration: 00:07:13 | Views: 1,591 | Comments: 7 | Likes: 39 | Dislikes: 1
@@ -310,13 +324,11 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
           $blurb .= " | Dislikes: " . prettyprint($v->{'statistics'}{'dislikeCount'});
         }
         if (defined($pub_timet)) {
+          printf STDERR "pub_timet: %s\n", $pub_timet;
           $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
         }
 #printf STDERR "PARSE_YOUTUBE_API pushing blurb to params\n";
         push @params, 'irc_miggybot_url_success', $args, $blurb;
-      } else {
-#printf STDERR "PARSE_YOUTUBE_API no items?\n";
-        push @params, 'irc_miggybot_url_error', $args, "No items? Content '" . $res->content . "'";
       }
     }
   }
@@ -324,6 +336,213 @@ printf STDERR "PARSE_YOUTUBE_API: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
   $kernel->post(@params);
   undef;
 }
+
+sub parse_youtube_api_channels {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS: res != success: %s %s\n", $res->code, $res->as_string;
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS success!\n";
+    my $json = decode_json($res->content);
+    if (! $json) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS no JSON\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } else {
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS got JSON\n";
+      if (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS got items and it contains id\n";
+#printf STDERR "%s\n", Dumper($json);
+        $args->{'channelId'} =  $json->{'items'}[0]->{'id'};
+        my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=" . $json->{'items'}[0]->{'id'} . "&eventType=live&type=video&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS: query to API: %s\n", $req->as_string;
+        $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api_channel_live', $req, $args );
+        return;
+      } else {
+printf STDERR "PARSE_YOUTUBE_API_CHANNELS: No items at all, or no id in them?\n";
+#printf STDERR Dumper($json);
+        if ($args->{'url'} =~ /http(s?):\/\/www\.youtube\.com\/user\/(?<user>[^\/]+)\/live$/) {
+          push @params, 'irc_miggybot_url_success', $args, "[YouTube] User: " . $+{'user'} . " | No channels to go live.";
+        }
+      }
+    }
+  }
+  $kernel->post(@params);
+}
+
+sub parse_youtube_api_channel_live {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE: res != success: %s %s\n", $res->code, $res->as_string;
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE success!\n";
+    my $json = decode_json($res->content);
+    if (! $json) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE no JSON\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } elsif (defined($json->{'items'}) and !defined($json->{'items'}[0])) { 
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE got JSON, but no first item, trying 'completed'\n";
+      my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=" . $args->{'channelId'} . "&eventType=completed&order=date&type=video&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE: query to API: %s\n", $req->as_string;
+        $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api_channel_completed', $req, $args );
+        return;
+    } elsif (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_LIVE got items and it contains id\n";
+#printf STDERR "%s\n", Dumper($json);
+      #youtube_blurb($json->{'items'}[0]);
+      push @params, 'irc_miggybot_url_success', $args, "[YouTube] Found 'live' channel info";
+    }
+  }
+
+  $kernel->post(@params);
+}
+
+sub parse_youtube_api_channel_completed {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED: res != success: %s %s\n", $res->code, $res->as_string;
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED success!\n";
+    my $json = decode_json($res->content);
+    if (! $json) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED no JSON\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } elsif (defined($json->{'items'}) and !defined($json->{'items'}[0])) { 
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED got JSON, but no first item, trying 'completed'\n";
+      my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=" . $args->{'channelId'} . "&eventType=upcoming&type=video&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED: query to API: %s\n", $req->as_string;
+        $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api_channel_upcoming', $req, $args );
+        return;
+    } elsif (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED got items and it contains id\n";
+#printf STDERR "%s\n", Dumper($json);
+      my $req = HTTP::Request->new('GET', "https://www.googleapis.com/youtube/v3/videos?part=contentDetails%2Cstatistics%2Csnippet&id=" . $json->{'items'}[0]->{'id'}->{'videoId'} . "&key=" . $youtube_api_key, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_COMPLETED: query to API: %s\n", $req->as_string;
+      $args->{'videoId'} = $json->{'items'}[0]->{'id'}->{'videoId'};
+      $kernel->post( $self->{http_alias}, 'request', 'parse_youtube_api', $req, $args );
+      return;
+    }
+  }
+
+  $kernel->post(@params);
+}
+
+sub parse_youtube_api_channel_upcoming {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my @params;
+
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING\n";
+  push @params, $args->{session};
+  my $res = $response->[0];
+
+  if (! $res->is_success) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING: res != success: %s %s\n", $res->code, $res->as_string;
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+    my $error =  "Failed to retrieve URL - ";
+    if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
+      $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } else {
+      $error .=  $res->status_line;
+    }
+    push @params, 'irc_miggybot_url_error', $args, $error;
+  } else {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING success!\n";
+    my $json = decode_json($res->content);
+    if (! $json) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING no JSON\n";
+      push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
+    } elsif (defined($json->{'items'}) and !defined($json->{'items'}[0])) { 
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING got JSON, but no first item, no more to try\n";
+      push @params, 'irc_miggybot_url_error', $args, "Tried live, completed and upcoming, nothing available";
+    } elsif (defined($json->{'items'}) and defined($json->{'items'}[0]->{'id'})) {
+printf STDERR "PARSE_YOUTUBE_API_CHANNEL_UPCOMING got items and it contains id\n";
+#printf STDERR "%s\n", Dumper($json);
+      #youtube_blurb($json->{'items'}[0]);
+      push @params, 'irc_miggybot_url_success', $args, "[YouTube] Found 'upcoming' channel info";
+    }
+  }
+
+  $kernel->post(@params);
+}
+
+sub youtube_blurb {
+  my ($kernel, $self, $request, $response) = @_[KERNEL, OBJECT, ARG0, ARG1];
+  my $args = $request->[1];
+  my $v = shift;
+
+  my $blurb = "[ YouTube ] Completed stream | Title: " . trunc_str($v->{'snippet'}{'title'}, 256);
+  $blurb .= " | Uploader: " . $v->{'snippet'}{'channelTitle'};
+  my $pub_timet = str2time($v->{'snippet'}{'publishedAt'});
+  if (defined($v->{'contentDetails'}{'duration'})) {
+    $blurb .= youtube_parse_duration($v->{'contentDetails'}{'duration'});
+  }
+  if (defined($v->{'statistics'}{'viewCount'})) {
+    $blurb .= " | Views: " . prettyprint($v->{'statistics'}{'viewCount'});
+  }
+  if (defined($v->{'statistics'}{'commentCount'})) {
+    $blurb .= " | Comments: " . prettyprint($v->{'statistics'}{'commentCount'});
+  }
+  if (defined($v->{'statistics'}{'likeCount'})) {
+    $blurb .= " | Likes: " . prettyprint($v->{'statistics'}{'likeCount'});
+  }
+  if (defined($v->{'statistics'}{'dislikeCount'})) {
+    $blurb .= " | Dislikes: " . prettyprint($v->{'statistics'}{'dislikeCount'});
+  }
+  if (defined($pub_timet)) {
+    printf STDERR "pub_timet: %s\n", $pub_timet;
+    $blurb .= " | Uploaded: " . strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($pub_timet));
+  }
+#printf STDERR "PARSE_YOUTUBE_API pushing blurb to params\n";
+
+  $kernel->post('irc_miggybot_url_success', $args, $blurb);
+  undef;
+}
+
 
 ## Fallback parser in case we don't have a YouTube API key, or it's just
 ## not a URL for a specific video
@@ -352,6 +571,7 @@ sub parse_youtube_com {
 
     my $datePublished = $tree->look_down('_tag' => 'meta', 'itemprop' => 'datePublished');
     if ($datePublished) {
+      #printf STDERR "datePublished: %s\n", Dumper($datePublished);
       $blurb .= " | Uploaded: " . $datePublished->attr('content');
     }
 
