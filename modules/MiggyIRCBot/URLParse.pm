@@ -31,7 +31,7 @@ my %sites = (
   '^http(s)?:\/\/coriolis(\.edcd)?\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
-  '^http(s)?:\/\/www\.twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
+  '^http(s)?:\/\/(www\.)?twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
 
 ## Ignores
   # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
