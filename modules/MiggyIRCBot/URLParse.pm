@@ -42,6 +42,8 @@ my %sites = (
   '^http(s)?:\/\/lmgtfy\.com\/\?q=' => { get => \&ignore_url, parse => undef },
   # http://prntscr.com/9rqz2w
   '^http(s)?:\/\/prntscr\.com\/.+' => { get => \&ignore_url, parse => undef },
+  # Fucking Daily Fail/Hate
+  '^http(s)?:\/\/(www|i)\.dailymail\.co\.uk' => { get => \&ignore_url, parse => undef },
 
 );
 
