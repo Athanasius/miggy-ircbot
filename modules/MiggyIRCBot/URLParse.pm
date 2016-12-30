@@ -817,7 +817,7 @@ printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $chann
 #printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
     $args->{'_channel_name'} = $channel_name;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
-  } elsif ($args->{'url'} =~ /^http(s)?:\/\/(www\.)?twitch\.tv\/(?<channel_name>[^\/]+)\/(?<channel_pre>.+)\/(?<video_id>[0-9]+)$/) {
+  } elsif ($args->{'url'} =~ /^http(s)?:\/\/(www\.)?twitch\.tv\/(?<channel_name>[^\/]+)\/(?<video_pre>.+)\/(?<video_id>[0-9]+)$/) {
     my ($channel_name, $video_pre, $video_id) = ($+{'channel_name'}, $+{'video_pre'}, $+{'video_id'});
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $video_pre, $video_id;
     my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
