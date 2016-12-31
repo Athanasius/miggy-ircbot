@@ -42,8 +42,10 @@ my %sites = (
   '^http(s)?:\/\/lmgtfy\.com\/\?q=' => { get => \&ignore_url, parse => undef },
   # http://prntscr.com/9rqz2w
   '^http(s)?:\/\/prntscr\.com\/.+' => { get => \&ignore_url, parse => undef },
-  # Fucking Daily Fail/Hate
+  # Fucking Daily Fail/Hate, and The Sun, and the Telegraph
   '^http(s)?:\/\/(www|i)\.dailymail\.co\.uk' => { get => \&ignore_url, parse => undef },
+  '^http(s)?:\/\/www\.telegraph\.co\.uk' => { get => \&ignore_url, parse => undef },
+  '^http(s)?:\/\/www\.thesun\.co\.uk' => { get => \&ignore_url, parse => undef },
 
 );
 
