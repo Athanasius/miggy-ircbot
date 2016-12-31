@@ -28,7 +28,7 @@ my %sites = (
   '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
   '^http(s)?:\/\/imgur\.com\/gallery\/([^\.\/]+)$' => {get => \&get_imgur_gallery, parse => \&parse_imgur_gallery },
   '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
-  '^http(s)?:\/\/coriolis(\.edcd)?\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
+  '^http(s)?:\/\/(beta\.)?coriolis(\.edcd)?\.io\/(outfit\/|import[\?\#])' => { get => \&ignore_url, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/(www\.)?twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
@@ -708,85 +708,6 @@ printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tNo galnetNewsArt
     return "That was not an HTML page";
   }
   return undef;
-}
-###########################################################################
-
-###########################################################################
-# http://coriolis.io/outfit/vulture/04A5A4A3D5A4D3C1e1e000304064a2b272525.Iw19kA==.MwRgDMZSIEz7cMZA?bn=KWS
-#
-#  We don't actually retrieve the URL at all (the page is all JS driven),
-# instead just pick some things out of the URL.
-###########################################################################
-sub get_coriolis_io_outfit {
-  my ($kernel, $self, $args) = @_;
-  my @params;
-  push @params, $args->{session};
-  my $site = "";
-
-printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
-  my $blurb = "";
-  if ($args->{'url'} =~ /^http(s)?:\/\/(?<site>coriolis(\.edcd)?\.io)\/outfit\/(?<ship_name>[^\/]+)\/[^\?]*(\?bn=(?<build_name>.+))?$/) {
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: matches regex\n";
-    $site = $+{'site'};
-    if (defined($+{'ship_name'})) {
-      my $sn = $+{'ship_name'};
-      my %ship_names = (
-        'adder' => 'Adder',
-        'anaconda' => 'Anaconda',
-        'asp' => 'Asp Explorer',
-        'asp_count' => 'Asp Scout',
-        'cobra_mk_iii' => 'Cobra Mk III',
-        'cobra_mk_iv' => 'Cobra Mk IV',
-        'diamondback_explorer' => 'Diamondback Explorer',
-        'diamondback_scout' => 'Diamondback Scout',
-        'eagle' => 'Eagle',
-        'federal_assault_ship' => 'Federal Assault Ship',
-        'federal_corvette' => 'Federal Corvette',
-        'federal_dropship' => 'Federal Dropship',
-        'federal_gunship' => 'Federal Gunship',
-        'fer_de_lance' => 'Fer de Lance',
-        'hauler' => 'Hauler',
-        'imperial_clipper' => 'Imperial Clipper',
-        'imperial_courier' => 'Imperial Courier',
-        'imperial_cutter' => 'Imperial Cutter',
-        'imperial_eagle' => 'Imperial Eagle',
-        'keelback' => 'Keelback',
-        'orca' => 'Orca',
-        'python' => 'Python',
-        'sidewinder' => 'Sidewinder',
-        'type_6_transporter' => 'Type-6 Transporter',
-        'type_7_transporter' => 'Type-7 Transporter',
-        'type_9_heavy' => 'Type-9 Heavy',
-        'viper' => 'Viper Mk III',
-        'viper_mk_iv' => 'Viper Mk IV',
-        'vulture' => 'Vulture',
-      );
-      if (defined($ship_names{lc($sn)})) {
-        $sn = $ship_names{lc($sn)};
-      }
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got ship_name\n";
-      if (defined($+{'build_name'})) {
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got build_name\n";
-        my $bn = $+{'build_name'};
-        # For some reason coriolios.io double-encodes / characters in build names
-        $bn =~ s/%252F/\//g;
-        $blurb = "[ " . $sn . " - " . uri_unescape($bn) . " ] - $site";
-      } else {
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: but no build_name\n";
-        $blurb = "[ " . $sn . " ] - $site";
-      }
-    } else {
-printf STDERR "_GET_CORIOLIS_IO_OUTFIT: no ship_name\n";
-      $blurb =  "[ Coriolis Shipyard ] - $site";
-    }
-  } else {
-printf STDERR "_GET_CORIOLIS_IO_OUTFIT: does NOT match regex\n";
-    $blurb =  "[ Coriolis Shipyard ] - $site";
-  }
-  push @params, 'irc_miggybot_url_success', $args, $blurb;
-
-  $kernel->post(@params);
-  undef;
 }
 ###########################################################################
 
