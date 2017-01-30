@@ -429,13 +429,29 @@ sub parse_imgur_image {
 #printf STDERR "PARSE_IMGUR_IMAGE\n";
   push @params, $args->{session};
   my $res = $response->[0];
+#printf STDERR "res: %s\n", Dumper($res);
+printf STDERR "res->code: %s\n", $res->code;
 
   if (! $res->is_success) {
 printf STDERR "PARSE_IMGUR_IMAGE: res != success: $res->status_line\n";
-printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+if (defined($res->header('X-PCCH-Errmsg'))) { printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg'); }
+# 500 status may have:
+# {"data":{"error":"Imgur is temporarily over capacity. Please try again later."},"success":false,"status":500}
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
       $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } elsif ($res->code == 500)
+    {
+      my $json = decode_json($res->content);
+      if (defined($json)) {
+        if (defined($json->{'data'}->{'error'})) {
+          $error .= $json->{'data'}->{'error'};
+        }
+      }
+    } elsif ($res->code == 400)
+    {
+      printf STDERR "400, res:\n%s\n", Dumper($res);
+      $error .=  $res->status_line;
     } else {
       $error .=  $res->status_line;
     }
