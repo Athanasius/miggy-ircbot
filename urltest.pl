@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -Imodules
+#!/usr/bin/perl -w -Ishare/perl/5.14.2 -Imodules
 # vim: textwidth=0 wrapmargin=0 shiftwidth=2 tabstop=2 expandtab
 
 use strict;

@@ -174,6 +174,7 @@ sub get_generic {
   # with a long persistent connection timeout will mean you don't actually
   # get your full response until it closes the connection.
   my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+  #my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'Keep-Alive', 'Accept' => '*/*']);
 mylog("_GET_GENERIC: '", $args{'url'}, "'");
 #printf STDERR "GET_GENERIC: req is:\n%s\n", $req->as_string();
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
@@ -190,6 +191,12 @@ sub _parse_url {
 
   if (! $res->is_success) {
 printf STDERR "_PARSE_URL: res != success: %s\n", $res->status_line;
+printf STDERR "_PARSE_URL: request:\n%s\n", $res->request->as_string;
+printf STDERR "_PARSE_URL: res:\n%s\n", Dumper($res);
+printf STDERR "_PARSE_URL: res headers:\n%s\n", $res->as_string;
+  # Cloudflare?  Response headers if so (for a success)
+  # Server: cloudflare-nginx
+  # CF-RAY: 329d79597bf268de-CDG
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
 printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');

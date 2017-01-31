@@ -34,6 +34,7 @@ printf STDERR "MiggyIRCBot::HTTP->PCI_register()\n";
     POE::Component::Client::HTTP->spawn(
       Alias           => $self->{http_alias},
       Agent           => 'perl:MiggyIRCBOT:v0.01 (by /u/suisanahta)',
+      #Agent           => 'Wget/1.16 (linux-gnu)',
       #Agent           => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36',
       Timeout         => 30,
       FollowRedirects => $self->{follow_redirects},
