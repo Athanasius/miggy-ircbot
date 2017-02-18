@@ -543,7 +543,7 @@ sub send_to_wheel {
 
   # XXX: If method is https and headers include a host then SNI
 #printf STDERR "POE:Component:Client:HTTP:Request->send_to_wheel()\nhttp_request:\n%s\n", Dumper($http_request);
-printf STDERR "POE:Component:Client:HTTP:Request->send_to_wheel()\nhttp_request->uri: '%s'\n", $http_request->uri;
+#printf STDERR "POE:Component:Client:HTTP:Request->send_to_wheel()\nhttp_request->uri: '%s'\n", $http_request->uri;
 #printf STDERR "POE:Component:Client:HTTP:Request->send_to_wheel()\n\$self->[REQ_CONNECTION]->wheel: '%s'\n", Dumper($self->[REQ_CONNECTION]->wheel);
   if ($http_request->uri =~ /^https:/ and defined($http_request->header('host'))) {
     #printf STDERR "self->[REQ_CONNECTION]->wheel->get_output_handle:\n%s\n", Dumper($self->[REQ_CONNECTION]->wheel->get_output_handle);

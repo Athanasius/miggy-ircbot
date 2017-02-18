@@ -25,7 +25,7 @@ use parent 'POE::Component::SSLify::ServerHandle';
 
 # Override TIEHANDLE because we create a CTX
 sub TIEHANDLE {
-	my ( $class, $socket, $version, $options, $ctx, $connref ) = @_;
+	my ( $class, $socket, $version, $options, $ctx, $connref, $http_host ) = @_;
 
 	# create a context, if necessary
 	if ( ! defined $ctx ) {
@@ -39,7 +39,8 @@ sub TIEHANDLE {
 	Net::SSLeay::set_fd( $ssl, $fileno );   # Must use fileno
 
   # SNI (Server Name Indication)
-  Net::SSLeay::set_tlsext_host_name($ssl, 'www.fuelrats.com');
+#printf STDERR "POE::Component::SSLify::ClientHandle::TIEHANDLE: http_host: %s\n", $http_host;
+  Net::SSLeay::set_tlsext_host_name($ssl, $http_host);
 	# Socket is in non-blocking mode, so connect() will return immediately.
 	# die_if_ssl_error won't die on non-blocking errors. We don't need to call connect()
 	# again, because OpenSSL I/O functions (read, write, ...) can handle that entirely

@@ -9,6 +9,7 @@
 use strict; use warnings;
 package POE::Component::SSLify;
 use Data::Dumper;
+use Devel::StackTrace;
 BEGIN {
   $POE::Component::SSLify::VERSION = '1.008';
 }
@@ -114,11 +115,15 @@ our $IGNORE_SSL_ERRORS = 0;
 
 sub Client_SSLify {
 	# Get the socket + version + options + ctx + callback
-	my( $socket, $version, $options, $custom_ctx, $callback ) = @_;
-printf STDERR "POE:Component:SSLify.pm->Client_SSLify: version: %s", Dumper($version);
-printf STDERR "POE:Component:SSLify.pm->Client_SSLify: options: %s", Dumper($options);
-printf STDERR "POE:Component:SSLify.pm->Client_SSLify: custom_ctx: %s", Dumper($custom_ctx);
-printf STDERR "POE:Component:SSLify.pm->Client_SSLify: callback: %s", Dumper($callback);
+	my( $socket, $version, $options, $custom_ctx, $callback, $http_host ) = @_;
+#my $trace = Devel::StackTrace->new();
+#printf STDERR "POE:Component:SSLify.pm->Client_SSLify: stack trace\n%s\n", $trace->as_string();
+
+#printf STDERR "POE:Component:SSLify.pm->Client_SSLify: version: %s", Dumper($version);
+#printf STDERR "POE:Component:SSLify.pm->Client_SSLify: options: %s", Dumper($options);
+#printf STDERR "POE:Component:SSLify.pm->Client_SSLify: custom_ctx: %s", Dumper($custom_ctx);
+#printf STDERR "POE:Component:SSLify.pm->Client_SSLify: callback: %s", Dumper($callback);
+#printf STDERR "POE:Component:SSLify.pm->Client_SSLify: http_host: %s\n", $http_host;
 
 	# Validation...
 	if ( ! defined $socket ) {
@@ -145,9 +150,8 @@ printf STDERR "POE:Component:SSLify.pm->Client_SSLify: callback: %s", Dumper($ca
 
 	# Now, we create the new socket and bind it to our subclass of Net::SSLeay::Handle
 	my $newsock = gensym();
-	tie( *$newsock, 'POE::Component::SSLify::ClientHandle', $socket, $version, $options, $custom_ctx, $callback ) or die "Unable to tie to our subclass: $!";
-printf STDERR "POE:Component:SSLify->Client_SSLify(): newsock:\n%s\n", Dumper(tied(*$newsock));
-printf STDERR " set_tlsext_host_name return value: %d\n", Net::SSLeay::set_tlsext_host_name(tied(*$newsock)->{'ssl'}, 'www.fuelrats.com');
+	tie( *$newsock, 'POE::Component::SSLify::ClientHandle', $socket, $version, $options, $custom_ctx, $callback, $http_host ) or die "Unable to tie to our subclass: $!";
+#printf STDERR "POE:Component:SSLify->Client_SSLify(): newsock:\n%s\n", Dumper(tied(*$newsock));
 
 	# argh, store the newsock in the tied class to use for callback
 	if ( defined $callback ) {
@@ -235,10 +239,10 @@ sub SSLify_Options {
 }
 
 sub SSLify_set_sni {
-printf STDERR "POE:Component:SSLify:SSLify_set_sni: \@_:\n%s\n", Dumper(\@_);
+#printf STDERR "POE:Component:SSLify:SSLify_set_sni: \@_:\n%s\n", Dumper(\@_);
   my ($socket, $serverhostname) = @_;
   my $ssl = tied(*$socket)->{'ssl'};
-printf STDERR "POE:Component:SSLify:SSLify_set_sni: *socket:\n%s\n", Dumper(tied(*$socket));
+#printf STDERR "POE:Component:SSLify:SSLify_set_sni: *socket:\n%s\n", Dumper(tied(*$socket));
   my $s = tied(*$socket)->{'socket'};
 #printf STDERR "POE:Component:SSLify:SSLify_set_sni: *socket->socket:\n%s\n", Dumper(tied($s));
 #printf STDERR "POE:Component:SSLify:SSLify_set_sni: ssl:\n%s\n", Dumper($ssl);
@@ -249,7 +253,7 @@ printf STDERR "POE:Component:SSLify:SSLify_set_sni: *socket:\n%s\n", Dumper(tied
 
   return 1;
   if (Net::SSLeay::set_tlsext_host_name($ssl, $serverhostname)) {
-    printf STDERR "  Net::SSLeay::set_tlsext_host_name returned true\n";
+    #printf STDERR "  Net::SSLeay::set_tlsext_host_name returned true\n";
     #printf STDERR "POE:Component:SSLify:SSLify_set_sni: ssl"
     return 1;
   } else {
