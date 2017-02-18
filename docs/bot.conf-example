@@ -1,0 +1,61 @@
+# This config file is in Apache Style, See # <https://httpd.apache.org/docs/2.0/configuring.html>
+# Most of the configuration directives in this file are mandatory, the
+# code no longer contains any defaults for them.  If you're sure you
+# don't have use for a directive then try commenting it out (# character
+# before it).
+<BotConfig>
+  <Irc>
+    NickName "SomeBot"
+    IrcName "A friendly boy - email@address"
+    <Server>
+      # Currently only one Name is supported.
+      Name "irc.server.example.com"
+      Port 6667
+      ConnectDelay 60
+      <Auth>
+        Type "Q" # For QuakeNet
+        Name "HeyQ"
+        Password "MySecret"
+      </Auth>
+    </Server>
+  </Irc>
+  # Currently only a single channel is supported.
+  <Channel>
+    Name "#SomeIRCChannel"
+    ReadyMessage "Ready for action!"
+  </Channel>
+  <Http>
+    #SetEnv no_http_proxy ""
+  </Http>
+  <Seen>
+    FileStore "seen_filestore.db"
+  </Seen>
+  <Rss>
+    # Currently only a single Feed is supported.
+    <Feed>
+      Name "Athan's Unofficial FD Dev RSS Feed"
+      Url "https://miggy.org/games/elite-dangerous/devtracker/ed-dev-posts.rss"
+      CheckInterval 300
+      FileStore "rss.db"
+    </Feed>
+  </Rss>
+  <UrlParser>
+    <YouTube>
+      ApiKey "See <https://developers.google.com/youtube/v3/getting-started>"
+    </YouTube>
+    <Imgur>
+      ClientId "See <https://api.imgur.com/endpoints>"
+      ClientSecret "See <https://api.imgur.com/endpoints>"
+    </Imgur>
+    <Reddit>
+      ClientId "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      ClientSecret "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      UserName "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      Password "See <https://github.com/reddit/reddit/wiki/OAuth2>"
+      AuthorizationRedirect ""
+    </Reddit>
+    <Twitch>
+      ClientId "See <https://github.com/justintv/Twitch-API/blob/master/authentication.md>"
+    </Twitch>
+  </UrlParser>
+</BotConfig>

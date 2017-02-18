@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -Imodules
+#!/usr/bin/perl -w -Ishare/perl/5.14.2 -Imodules
 # vim: textwidth=0 wrapmargin=0 shiftwidth=2 tabstop=2 expandtab
 
 use strict;
@@ -10,7 +10,7 @@ use MiggyIRCBot::URLParse;
 use POSIX qw/strftime/;
 use Data::Dumper;
 
-my $config = MiggyIRCBot::ConfigFile->new(file => "bot-config.txt");
+my $config = MiggyIRCBot::ConfigFile->new(file => "bot.conf");
 if (!defined($config)) {
   die "No config!";
 }
@@ -36,20 +36,19 @@ sub _start {
 
   $irc->plugin_add('MiggyIRCBotHTTP',
     $http = MiggyIRCBot::HTTP->new(
-      no_http_proxy => $config->getconf('no_http_proxy')
     )
   );
   $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
       http_alias => $http->{'http_alias'},
-      youtube_api_key => $config->getconf('youtube_api_key'),
-      imgur_clientid => $config->getconf('imgur_clientid'),
-      imgur_clientsecret => $config->getconf('imgur_clientsecret'),
-      reddit_username => $config->getconf('reddit_username'),
-      reddit_password => $config->getconf('reddit_password'),
-      reddit_clientid => $config->getconf('reddit_clientid'),
-      reddit_secret => $config->getconf('reddit_secret'),
-      twitchtv_clientid => $config->getconf('twitchtv_clientid'),
+      youtube_api_key => $config->UrlParser->block('YouTube')->get('ApiKey'),
+      imgur_clientid => $config->UrlParser->block('Imgur')->get('ClientId'),
+      imgur_clientsecret => $config->UrlParser->block('Imgur')->get('ClientSecret'), 
+      reddit_username => $config->UrlParser->block('Reddit')->get('UserName'),
+      reddit_password => $config->UrlParser->block('Reddit')->get('Password'),
+      reddit_clientid => $config->UrlParser->block('Reddit')->get('ClientId'),
+      reddit_secret => $config->UrlParser->block('Reddit')->get('ClientSecret'),
+      twitchtv_clientid => $config->UrlParser->block('Twitch')->get('ClientId'),
     )
   );
 
@@ -64,7 +63,7 @@ sub irc_001 {
 
   # Set mode +x
   print " Attempt to set usermode +x\n";
-  $irc->yield('mode', $config->getconf('nickname') . " +x");
+  $irc->yield('mode', $config->NickName . " +x");
 
   return;
 }
