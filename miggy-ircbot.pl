@@ -195,11 +195,11 @@ sub irc_invite {
   my $irc = $_[SENDER]->get_heap();
 
   printf "irc_invite - Nick: '%s', Channel: '%s'\n", $nick, $channel;
-  if ($channel eq $config->Channel->get('Name')) {
+  if (lc($channel) eq lc($config->Channel->get('Name'))) {
     print " irc_invite: For our channel\n";
     my $on_channel = undef;
     foreach my $c ( keys %{$irc->channels()} ) {
-      if ($c eq $config->Channel->get('Name')) {
+      if (lc($c) eq lc($config->Channel->get('Name'))) {
         print " irc_invite: We're currently on our channel\n";
         $on_channel = $c;
         last;
