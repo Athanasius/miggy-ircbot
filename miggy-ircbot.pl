@@ -175,7 +175,7 @@ sub _start {
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->CrowdFund->get('CheckInterval'));
 
-  if ($irc->plugin_add('SCURLParse',
+  if (! $irc->plugin_add('SCURLParse',
     MiggyIRCBot::URLParse->new(
       http_alias => $http->{'http_alias'}
     )
