@@ -143,8 +143,9 @@ sub _parse_rss_items {
       my $rss = XML::RSS->new();
       eval { $rss->parse($str); };
       if ($@) {
-        mylog("_PARSE_RSS_ITEMS: Error from XML::RSS->parse()\n'", $str, "'\n\n");
-        push @params, 'irc_miggybot_rss_error', $args, $@;
+        mylog("_PARSE_RSS_ITEMS: Error from XML::RSS->parse() '", $@, "'");
+        #push @params, 'irc_miggybot_rss_error', $args, $@;
+        push @params, 'irc_miggybot_rss_error', $args, "Error from XML::RSS->parse(), partial content from web server?";
       } else {
         my $sth = $rss_db->prepare("INSERT INTO rss_items (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
         push @params, 'irc_miggybot_rss_newitems', $args;
