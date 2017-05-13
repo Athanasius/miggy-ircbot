@@ -175,14 +175,6 @@ sub _start {
   # And set up the delayed check
   $kernel->delay('crowdfund_check_threshold', $config->CrowdFund->get('CheckInterval'));
 
-  if (! $irc->plugin_add('SCURLParse',
-    MiggyIRCBot::URLParse->new(
-      http_alias => $http->{'http_alias'}
-    )
-  )) {
-    return 0;
-  }
-
   if (! $irc->plugin_add('MiggyIRCBotURLParse',
     MiggyIRCBot::URLParse->new(
       http_alias => $http->{'http_alias'},
@@ -362,7 +354,7 @@ sub irc_botcmd_rss {
   my $poco = $sender->get_heap();
 
   if (!defined($config->Rss)) {
-    $kernel->yield('privmsg', $config->Channel->get('Name'), "No RSS feed defined");
+    $irc->yield('privmsg', $config->Channel->get('Name'), "No RSS feed defined");
     return;
   }
 
