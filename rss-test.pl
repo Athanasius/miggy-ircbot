@@ -87,15 +87,16 @@ printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS:\n";
   if (defined($_[ARG1])) {
 printf STDERR "IRC_MIGGYBOT_RSS_NEWITEMS: Got some item(s)\n";
     for my $i (@_[ARG1..$#_]) {
-      print 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'};
+      print 'New Comm-Link: "' . $i->{'title'} . '" - ' . $i->{'permaLink'}, "\n";
     }
   } elsif (! $args->{quiet}) {
-      print 'No new Comm-links at this time';
+      print 'No new Comm-links at this time', "\n";
   }
-  #$irc->plugin_del('MiggyIRCBotRSS');
-  #$irc->plugin_del('MiggyIRCBotHTTP');
-  #$irc->shutdown();
-  #$kernel->stop();
+  print "IRC_MIGGYBOT_RSS_NEWITEMS: Done, shutting down\n";
+  $irc->plugin_del('MiggyIRCBotRSS');
+  $irc->plugin_del('MiggyIRCBotHTTP');
+  $irc->shutdown();
+  $kernel->stop();
 }
 
 sub irc_miggybot_rss_error {
