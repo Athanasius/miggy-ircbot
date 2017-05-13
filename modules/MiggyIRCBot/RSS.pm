@@ -139,7 +139,7 @@ sub _parse_rss_items {
       push(@params, 'irc_miggybot_rss_error', $args, "No RSS tag/version");
     } else {
       my $str = $result->content;
-      mylog("_PARSE_RSS_ITEMS: String to be parsed is\n'" . $str . "'\n\n");
+#      mylog("_PARSE_RSS_ITEMS: String to be parsed is\n'" . $str . "'\n\n");
       my $rss = XML::RSS->new();
       eval { $rss->parse($str); };
       if ($@) {
