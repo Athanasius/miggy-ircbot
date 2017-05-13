@@ -146,7 +146,11 @@ sub Seen {
 sub Rss {
   my $self = shift;
 
-  return $self->{botconfig}->block('Rss');
+  if (defined($self->{botconfig}->get('Rss'))) {
+    return $self->{botconfig}->block('rss');
+  } else {
+    return undef;
+  }
 }
 
 ## BotConfig -> Rss -> Feed
