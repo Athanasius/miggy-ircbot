@@ -22,7 +22,6 @@ POE::Session->create(
   package_states => [
     main => [ qw( _default _start irc_001
       irc_miggybot_url_success irc_miggybot_url_error
-
       ) ]
   ],
   inline_states => {
