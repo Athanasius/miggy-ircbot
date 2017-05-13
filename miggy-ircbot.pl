@@ -149,16 +149,18 @@ sub _start {
   $irc->plugin_add('MiggyIRCBotHTTP',
     $http = MiggyIRCBot::HTTP->new()
   );
-  if (! $irc->plugin_add('MiggyIRCBotRSS',
-    MiggyIRCBot::RSS->new(
-      http_alias => $http->{'http_alias'},
-      rss_url => $config->Rss->block('Feed')->get('Url'),
-      rss_file => $config->Rss->block('Feed')->get('FileStore')
-    )
-  )) {
-    return 0;
+  if (defined($config->Rss)) {
+    if (! $irc->plugin_add('MiggyIRCBotRSS',
+      MiggyIRCBot::RSS->new(
+        http_alias => $http->{'http_alias'},
+        rss_url => $config->Rss->block('Feed')->get('Url'),
+        rss_file => $config->Rss->block('Feed')->get('FileStore')
+      )
+    )) {
+      return 0;
+    }
+    $kernel->delay('rss_check', $config->Rss->block('Feed')->get('CheckInterval'));
   }
-  $kernel->delay('rss_check', $config->Rss->block('Feed')->get('CheckInterval'));
 
   if (! $irc->plugin_add('SCCrowdfund',
     MiggyIRCBot::Crowdfund->new(
@@ -358,6 +360,11 @@ sub irc_botcmd_rss {
   my ($kernel, $session, $sender, $channel, $arg) = @_[KERNEL, SESSION, SENDER, ARG1, ARG2];
   my $nick = (split /!/, $_[ARG0])[0];
   my $poco = $sender->get_heap();
+
+  if (!defined($config->Rss)) {
+    $kernel->yield('privmsg', $config->Channel->get('Name'), "No RSS feed defined");
+    return;
+  }
 
   if (defined($arg)) {
     if ($arg eq "latest") {
