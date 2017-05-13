@@ -159,7 +159,7 @@ sub _parse_rss_items {
             push @params, $item;
 
             my %rss_item = ( 'title' => "NULL", 'link' => "NULL", 'description' => "NULL", 'author' => "NULL", 'category' => "NULL", 'comments' => "NULL", 'enclosure' => "NULL", 'guid' => "NULL", 'pubdate' => "NULL", 'source' => "NULL", 'content' => "NULL" );
-            foreach my $f (keys($item)) {
+            foreach my $f (keys(%$item)) {
 #             print "Item field: " . $f . " = '" . $item->{$f} . "'\n";
               if ($f eq "permaLink") {
                 $rss_item{'guid'} = $item->{$f};

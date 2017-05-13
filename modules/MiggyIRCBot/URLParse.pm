@@ -27,11 +27,11 @@ my %sites = (
   '^http(s)?:\/\/(i\.)?imgur\.com\/([^\.\/]+)(\..+)?$' => {get => \&get_imgur_image, parse => \&parse_imgur_image},
   '^http(s)?:\/\/imgur\.com\/a\/([^\.\/]+)$' => {get => \&get_imgur_album, parse => \&parse_imgur_album},
   '^http(s)?:\/\/imgur\.com\/gallery\/([^\.\/]+)$' => {get => \&get_imgur_gallery, parse => \&parse_imgur_gallery },
-  '^http(s)?:\/\/community\.elitedangerous\.com\/galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
-  '^http(s)?:\/\/coriolis\.io\/outfit\/' => {get => \&get_coriolis_io_outfit, parse => undef },
+  '^http(s)?:\/\/community\.elitedangerous\.com\/([a-zA-Z]{2}\/)?galnet\/uid\/[a-f0-9]+$' => {get => undef, parse => \&parse_community_elitedangeros_com_galnet_uid },
+  '^http(s)?:\/\/(beta\.)?coriolis(\.edcd)?\.io\/(outfit\/|import[\?\#])' => { get => \&ignore_url, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
-  '^http(s)?:\/\/www\.twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
+  '^http(s)?:\/\/(www\.)?twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
 
 ## Ignores
   # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
@@ -42,6 +42,10 @@ my %sites = (
   '^http(s)?:\/\/lmgtfy\.com\/\?q=' => { get => \&ignore_url, parse => undef },
   # http://prntscr.com/9rqz2w
   '^http(s)?:\/\/prntscr\.com\/.+' => { get => \&ignore_url, parse => undef },
+  # Fucking Daily Fail/Hate, and The Sun, and the Telegraph
+  '^http(s)?:\/\/(www|i)\.dailymail\.co\.uk' => { get => \&ignore_url, parse => undef },
+  '^http(s)?:\/\/www\.telegraph\.co\.uk' => { get => \&ignore_url, parse => undef },
+  '^http(s)?:\/\/www\.thesun\.co\.uk' => { get => \&ignore_url, parse => undef },
 
 );
 
@@ -170,6 +174,7 @@ sub get_generic {
   # with a long persistent connection timeout will mean you don't actually
   # get your full response until it closes the connection.
   my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+  #my $req = HTTP::Request->new('GET', $args{'url'}, ['Connection' => 'Keep-Alive', 'Accept' => '*/*']);
 mylog("_GET_GENERIC: '", $args{'url'}, "'");
 #printf STDERR "GET_GENERIC: req is:\n%s\n", $req->as_string();
   $kernel->post( $self->{http_alias}, 'request', '_parse_url', $req, \%args );
@@ -187,6 +192,12 @@ sub _parse_url {
 
   if (! $res->is_success) {
 printf STDERR "_PARSE_URL: res != success: %s\n", $res->status_line;
+printf STDERR "_PARSE_URL: request:\n%s\n", $res->request->as_string;
+printf STDERR "_PARSE_URL: res:\n%s\n", Dumper($res);
+printf STDERR "_PARSE_URL: res headers:\n%s\n", $res->as_string;
+  # Cloudflare?  Response headers if so (for a success)
+  # Server: cloudflare-nginx
+  # CF-RAY: 329d79597bf268de-CDG
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
 printf STDERR "_PARSE_URL: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
@@ -426,13 +437,29 @@ sub parse_imgur_image {
 #printf STDERR "PARSE_IMGUR_IMAGE\n";
   push @params, $args->{session};
   my $res = $response->[0];
+#printf STDERR "res: %s\n", Dumper($res);
+printf STDERR "res->code: %s\n", $res->code;
 
   if (! $res->is_success) {
 printf STDERR "PARSE_IMGUR_IMAGE: res != success: $res->status_line\n";
-printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg');
+if (defined($res->header('X-PCCH-Errmsg'))) { printf STDERR "PARSE_IMGUR_IMAGE: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Errmsg'); }
+# 500 status may have:
+# {"data":{"error":"Imgur is temporarily over capacity. Please try again later."},"success":false,"status":500}
     my $error =  "Failed to retrieve URL - ";
     if (defined($res->header('X-PCCH-Errmsg')) and $res->header('X-PCCH-Errmsg') =~ /Connection to .* failed: [^\s]+ error (?<errornum>\?\?|[0-9]]+): (?<errorstr>.*)$/) {
       $error .= $+{'errornum'} . ": " . $+{'errorstr'};
+    } elsif ($res->code == 500)
+    {
+      my $json = decode_json($res->content);
+      if (defined($json)) {
+        if (defined($json->{'data'}->{'error'})) {
+          $error .= $json->{'data'}->{'error'};
+        }
+      }
+    } elsif ($res->code == 400)
+    {
+      printf STDERR "400, res:\n%s\n", Dumper($res);
+      $error .=  $res->status_line;
     } else {
       $error .=  $res->status_line;
     }
@@ -709,83 +736,6 @@ printf STDERR "_PARSE_COMMUNITY_ELITEDANGEROS_COM_GALNET_UID\n\tNo galnetNewsArt
 ###########################################################################
 
 ###########################################################################
-# http://coriolis.io/outfit/vulture/04A5A4A3D5A4D3C1e1e000304064a2b272525.Iw19kA==.MwRgDMZSIEz7cMZA?bn=KWS
-#
-#  We don't actually retrieve the URL at all (the page is all JS driven),
-# instead just pick some things out of the URL.
-###########################################################################
-sub get_coriolis_io_outfit {
-  my ($kernel, $self, $args) = @_;
-  my @params;
-  push @params, $args->{session};
-
-printf STDERR "_GET_CORIOLIS_IO_OUTFIT: url '%s'\n", $args->{'url'};
-  my $blurb = "";
-  if ($args->{'url'} =~ /^http(s)?:\/\/coriolis\.io\/outfit\/(?<ship_name>[^\/]+)\/[^\?]*(\?bn=(?<build_name>.+))?$/) {
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: matches regex\n";
-    if (defined($+{'ship_name'})) {
-      my $sn = $+{'ship_name'};
-      my %ship_names = (
-        'adder' => 'Adder',
-        'anaconda' => 'Anaconda',
-        'asp' => 'Asp Explorer',
-        'asp_count' => 'Asp Scout',
-        'cobra_mk_iii' => 'Cobra Mk III',
-        'cobra_mk_iv' => 'Cobra Mk IV',
-        'diamondback_explorer' => 'Diamondback Explorer',
-        'diamondback_scout' => 'Diamondback Scout',
-        'eagle' => 'Eagle',
-        'federal_assault_ship' => 'Federal Assault Ship',
-        'federal_corvette' => 'Federal Corvette',
-        'federal_dropship' => 'Federal Dropship',
-        'federal_gunship' => 'Federal Gunship',
-        'fer_de_lance' => 'Fer de Lance',
-        'hauler' => 'Hauler',
-        'imperial_clipper' => 'Imperial Clipper',
-        'imperial_courier' => 'Imperial Courier',
-        'imperial_cutter' => 'Imperial Cutter',
-        'imperial_eagle' => 'Imperial Eagle',
-        'keelback' => 'Keelback',
-        'orca' => 'Orca',
-        'python' => 'Python',
-        'sidewinder' => 'Sidewinder',
-        'type_6_transporter' => 'Type-6 Transporter',
-        'type_7_transporter' => 'Type-7 Transporter',
-        'type_9_heavy' => 'Type-9 Heavy',
-        'viper' => 'Viper Mk III',
-        'viper_mk_iv' => 'Viper Mk IV',
-        'vulture' => 'Vulture',
-      );
-      if (defined($ship_names{lc($sn)})) {
-        $sn = $ship_names{lc($sn)};
-      }
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got ship_name\n";
-      if (defined($+{'build_name'})) {
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: got build_name\n";
-        my $bn = $+{'build_name'};
-        # For some reason coriolios.io double-encodes / characters in build names
-        $bn =~ s/%252F/\//g;
-        $blurb = "[ " . $sn . " - " . uri_unescape($bn) . " ] - coriolis.io";
-      } else {
-#printf STDERR "_GET_CORIOLIS_IO_OUTFIT: but no build_name\n";
-        $blurb = "[ " . $sn . " ] - coriolis.io";
-      }
-    } else {
-printf STDERR "_GET_CORIOLIS_IO_OUTFIT: no ship_name\n";
-      $blurb =  "[ Coriolis Shipyard ] - coriolis.io";
-    }
-  } else {
-printf STDERR "_GET_CORIOLIS_IO_OUTFIT: does NOT match regex\n";
-    $blurb =  "[ Coriolis Shipyard ] - coriolis.io";
-  }
-  push @params, 'irc_miggybot_url_success', $args, $blurb;
-
-  $kernel->post(@params);
-  undef;
-}
-###########################################################################
-
-###########################################################################
 # get_reddit_com
 ###########################################################################
 sub get_reddit_com {
@@ -805,7 +755,8 @@ sub get_twitch_tv {
   my ($kernel, $self, $args) = @_;
 #printf STDERR "GET_TWITCH_TV\n";
 
-  my (undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)(\/|\/dashboard)?$/;
+  $args->{'url'} =~ /^http(s)?:\/\/(www\.)?twitch\.tv\/(?<channel_name>[^\/]+)(?<video_pre>\/|\/dashboard)?$/;
+  my ($channel_name, $video_pre) = ($+{'channel_name'}, $+{'video_pre'});
 #printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
   if ($twitchtv_clientid and $channel_name) {
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $channel_name;
@@ -813,7 +764,8 @@ printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $chann
 #printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
     $args->{'_channel_name'} = $channel_name;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
-  } elsif ((undef, $channel_name, $video_pre, $video_id) = $args->{'url'} =~ /^http(s)?:\/\/www\.twitch\.tv\/([^\/]+)\/(.+)\/([0-9]+)$/) {
+  } elsif ($args->{'url'} =~ /^http(s)?:\/\/(www\.)?twitch\.tv\/(?<channel_name>[^\/]+)\/(?<video_pre>.+)\/(?<video_id>[0-9]+)$/) {
+    my ($channel_name, $video_pre, $video_id) = ($+{'channel_name'}, $+{'video_pre'}, $+{'video_id'});
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $video_pre, $video_id;
     my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
     $args->{'_channel_name'} = $channel_name;

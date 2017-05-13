@@ -2,6 +2,7 @@
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
 
+*) Have ConfigFile.pm verify that all necessary parameters are set, barf on startup if not.  This would avoid the case where the bot runs OK to start with then dies due to some action.
 *) Track official server status, either using the launcher URL or http://www.edsm.net/api-status.
   <http://hosting.zaonce.net/launcher-status/status.json>
 *) !cgs command to display info about currently active CGs.
@@ -13,7 +14,6 @@ Vital to making bot more generic and easier to configure.
   Feed URL: https://community.elitedangerous.com/taxonomy/term/6/feed
   NB: I do/did have "Mark updated articles as unread" ticked.
 *) Config file for simple "say this" bot commands. FAQ module ?
-*) If we have Q Auth details then delay channel join until after auth (or some timer?).
 *) On the fly reloading of modules.
 *) Per site URL parsing to pull extra information or cope with the blurb we
    want not being in the <title>
@@ -44,7 +44,7 @@ Vital to making bot more generic and easier to configure.
     edshipyard.com
     http://www.nasa.gov/multimedia/nasatv/index.html
     http://steamcommunity.com/sharedfiles/filedetails/?id=586886178
-    Twitter
+    Twitter - does a reasonable job with basic parsing
     https://vimeo.com/62554105
     gfycat.com
       https://gfycat.com/api
@@ -73,6 +73,7 @@ Vital to making bot more generic and easier to configure.
 *) Change "!rss latest" to inform the channel it's telling the user the latest
   10 items in MSG/NOTICE. DONE
 *) Config file to change "Reporting for duty" message DONE
+*) If we have Q Auth details then delay channel join until after auth (or some timer?). DONE
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Left over from ^Lumi^
