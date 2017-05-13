@@ -406,7 +406,9 @@ sub irc_miggybot_rss_error {
   my $reply_to = delete $args->{_reply_to};
 
 mylog("irc_miggybot_rss_error...");
-  $irc->yield('privmsg', $reply_to, "RSS Error: " . $error);
+  if (defined($error) and $error ne "") {
+    $irc->yield('privmsg', $reply_to, "RSS Error: " . $error);
+  }
 }
 ###########################################################################
 
