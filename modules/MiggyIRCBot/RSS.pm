@@ -135,15 +135,16 @@ sub _parse_rss_items {
       }
       push(@params, 'irc_miggybot_rss_error', $args, "Incorrect Content-Type: " . $ct);
     } elsif ($result->content !~ /<rss version/) {
+      mylog("_PARSE_RSS_ITEMS: No RSS tag/version");
       push(@params, 'irc_miggybot_rss_error', $args, "No RSS tag/version");
     } else {
       my $str = $result->content;
-      #mylog("_PARSE_RSS_ITEMS: String to be parsed is\n'" . $str . "'\n\n");
+      mylog("_PARSE_RSS_ITEMS: String to be parsed is\n'" . $str . "'\n\n");
       my $rss = XML::RSS->new();
       eval { $rss->parse($str); };
       if ($@) {
+        mylog("_PARSE_RSS_ITEMS: Error from XML::RSS->parse()\n'", $str, "'\n\n");
         push @params, 'irc_miggybot_rss_error', $args, $@;
-        mylog("_PARSE_RSS_ITEMS: Error from XML::RSS->parse()\n", $str, "\n\n");
       } else {
         my $sth = $rss_db->prepare("INSERT INTO rss_items (title,link,description,author,category,comments,enclosure,guid,pubdate,source,content) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
         push @params, 'irc_miggybot_rss_newitems', $args;
@@ -179,6 +180,7 @@ sub _parse_rss_items {
       }
     }
   } else {
+    mylog("_PARSE_RSS_ITEMS: !success '" . $result->status_line . "'");
     push @params, 'irc_miggybot_rss_error', $args, $result->status_line;
   }
   $kernel->post( @params );
