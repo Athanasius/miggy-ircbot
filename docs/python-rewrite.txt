@@ -1,0 +1,37 @@
+TODO
+====
+
+	Find out the state of modules for IRC:
+		How reliable (staying connected).
+		How easily extended (QNet auth).
+	
+	RSS parsing.
+		Easy handling of multiple feeds.
+
+	HTTP(s) lookups.
+
+	Third Party website APIs
+		YouTube
+		Twitch
+		Twitter
+		Reddit
+		Instagram
+		Imgur
+
+	RSI Crowdfund
+
+Mistakes Not To Repeat
+======================
+
+	Have proper daemonisation.
+
+	Have proper logging.
+		Not spamming a channel with errors.  Use a separate
+		channel and/or email or some other out of band medium.
+
+		Don't just log aaaaaaaaaaall the raw stuff by default.
+
+	HTTP(S) retrieval must work without hacks on the modules.
+		SNI
+		Compression not causing partial/delayed reads.
+		Encryption not causing partial/delayed reads.

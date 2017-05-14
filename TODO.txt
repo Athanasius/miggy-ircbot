@@ -1,7 +1,8 @@
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Vital to making bot more generic and easier to configure.
 ---------------------------------------------------------
-
+*) Handle HTTP redirects (why aren't we already?)
+*) Handle https://www.youtube.com/shared?ci=WMX6wPhMwzc
 *) Have ConfigFile.pm verify that all necessary parameters are set, barf on startup if not.  This would avoid the case where the bot runs OK to start with then dies due to some action.
 *) Track official server status, either using the launcher URL or http://www.edsm.net/api-status.
   <http://hosting.zaonce.net/launcher-status/status.json>
