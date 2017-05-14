@@ -265,7 +265,7 @@ sub irc_botcmd_rss {
   my $poco = $sender->get_heap();
 
   if (!defined($config->Rss)) {
-    $kernel->yield('privmsg', $config->Channel->get('Name'), "No RSS feed defined");
+    $irc->yield('privmsg', $config->Channel->get('Name'), "No RSS feed defined");
     return;
   }
 
