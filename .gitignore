@@ -1,8 +1,7 @@
 .vimrc
 .*.swp
 seen_filestore.db
-bot-config.txt
-bot.conf
+bot.conf*
 event.log
 rss.db
 test.log
