@@ -31,7 +31,7 @@ my %sites = (
   '^http(s)?:\/\/(beta\.)?coriolis(\.edcd)?\.io\/(outfit\/|import[\?\#])' => { get => \&ignore_url, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+\/comments\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
   '^http(s)?:\/\/.+\.reddit\.com\/r\/[^\/]+' => {get => \&get_reddit_com, parse => undef },
-  '^http(s)?:\/\/(www\.)?twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
+  '^http(s)?:\/\/(www\.|go\.)?twitch\.tv\/.+' => { get => \&get_twitch_tv, parse => undef },
 
 ## Ignores
   # http://s2.quickmeme.com/img/7e/7e05cfb0d554c683769a319b95183ccc84f74d226488b8f3de7bd00b240d2bc1.jpg
@@ -754,7 +754,7 @@ sub get_twitch_tv {
   my ($kernel, $self, $args) = @_;
 #printf STDERR "GET_TWITCH_TV\n";
 
-  $args->{'url'} =~ /^http(s)?:\/\/(www\.)?twitch\.tv\/(?<channel_name>[^\/]+)(?<video_pre>\/|\/dashboard)?$/;
+  $args->{'url'} =~ /^http(s)?:\/\/(www\.|go\.)?twitch\.tv\/(?<channel_name>[^\/]+)(?<video_pre>\/|\/dashboard)?$/;
   my ($channel_name, $video_pre) = ($+{'channel_name'}, $+{'video_pre'});
 #printf STDERR "GET_TWITCH_TV: channel_name = %s\n", $channel_name;
   if ($twitchtv_clientid and $channel_name) {
@@ -763,7 +763,7 @@ printf STDERR "GET_TWITCH_TV, using API for '%s' (%s)\n", $args->{'url'}, $chann
 #printf STDERR "GET_TWITCH_TV: req is:\n%s\n", $req->as_string();
     $args->{'_channel_name'} = $channel_name;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_stream', $req, $args );
-  } elsif ($args->{'url'} =~ /^http(s)?:\/\/(www\.)?twitch\.tv\/(?<channel_name>[^\/]+)\/(?<video_pre>.+)\/(?<video_id>[0-9]+)$/) {
+  } elsif ($args->{'url'} =~ /^http(s)?:\/\/(www\.|go\.)?twitch\.tv\/(?<channel_name>[^\/]+)\/(?<video_pre>.+)\/(?<video_id>[0-9]+)$/) {
     my ($channel_name, $video_pre, $video_id) = ($+{'channel_name'}, $+{'video_pre'}, $+{'video_id'});
 printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $video_pre, $video_id;
     my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_pre . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
