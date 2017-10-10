@@ -771,6 +771,11 @@ printf STDERR "GET_TWITCH_TV, using API for '%s' (%s%s)\n", $args->{'url'}, $vid
     $args->{'_video_pre'} = $video_pre;
     $args->{'_video_id'} = $video_id;
     $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_video', $req, $args );
+  } elsif ($args->{'url'} =~ /^http(s)?:\/\/(www\.|go\.)?twitch\.tv\/videos\/(?<video_id>[0-9]+)$/) {
+    my $video_id = $+{'video_id'};
+    my $req = HTTP::Request->new('GET', "https://api.twitch.tv/kraken/videos/" . $video_id, ['Accept' => 'application/vnd.twitchtv.3+json', 'Client-ID' => $twitchtv_clientid, 'Connection' => 'close', 'Accept-Language' => 'en-gb;q=0.8, en;q=0.7']);
+    $args->{'_video_id'} = $video_id;
+    $kernel->post( $self->{http_alias}, 'request', 'parse_twitch_tv_video', $req, $args );
   } else {
 printf STDERR "GET_TWITCH_TV, NOT just using scraping for '%s', no output\n", $args->{'url'};
   }

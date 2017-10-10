@@ -34,7 +34,7 @@
     # Currently only a single Feed is supported.
     <Feed>
       Name "Athan's Unofficial FD Dev RSS Feed"
-      Url "https://miggy.org/games/elite-dangerous/devtracker/ed-dev-posts.rss"
+      Url "https://ed.miggy.org/devtracker/ed-dev-posts.rss"
       CheckInterval 300
       FileStore "rss.db"
     </Feed>
