@@ -1,3 +1,5 @@
+**NB: This project is now deprecated.  See instead the Python/Limnoria-based version of this bot at https://github.com/Athanasius/miggy-py-ircbot**
+
 A generic IRC bot, originally for running ^Lumi^ in #starcitizen on
 QuakeNet.  As such some of the older features may seem esoteric.
 
