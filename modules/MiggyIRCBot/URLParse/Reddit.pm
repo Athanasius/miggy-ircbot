@@ -108,10 +108,11 @@ printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: X-PCCH-Errmsg: %s\n", $res->header('X-P
       my $json = decode_json($res->content);
       if (!defined($json->{'access_token'})) {
         push @params, 'irc_miggybot_url_error', $args, "Reddit Auth Token response was JSON, but no access_token";
+#printf STDERR "Reddit Auth Token response was JSON, but no access_token:\n%s\n", Dumper($json);
       } else {
         $reddit_token = $json->{'access_token'};
         $args->{'_requested_auth'} = 0;
-printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: token is now '%s'\n", $reddit_token;
+#printf STDERR "_PARSE_REDDIT_AUTH_TOKEN: token is now '%s'\n", $reddit_token;
         my %args = ( url => $heap->{'reddit_url'}, _channel => $heap->{'_channel'} );
         my @args;
         $args[0] = \%args;
