@@ -472,24 +472,25 @@ if (defined($res->header('X-PCCH-Errmsg'))) { printf STDERR "PARSE_IMGUR_IMAGE: 
       push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
     } else {
 #printf STDERR "PARSE_IMGUR_IMAGE: Got JSON?\n";
-      if (!defined($json->{'success'}) or $json->{'success'} ne 'true') {
-#printf STDERR "PARSE_IMGUR_IMAGE: No success, or it's not true?\n";
+# {"data":{"id":"i59CVaO","title":null,"description":null,"datetime":1520343059,"type":"image\/jpeg","animated":false,"width":720,"height":1280,"size":80663,"views":4,"bandwidth":322652,"vote":null,"favorite":false,"nsfw":false,"section":null,"account_url":null,"account_id":null,"is_ad":false,"in_most_viral":false,"has_sound":false,"tags":[],"ad_type":0,"ad_url":"","in_gallery":false,"link":"https:\/\/i.imgur.com\/i59CVaO.jpg"},"success":true,"status":200}
+      if (!defined($json->{'success'}) or ! $json->{'success'}) {
+printf STDERR "PARSE_IMGUR_IMAGE: No success, or it's not true?\nContent:\n%s\n", $res->content;
         push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'data'}{'error'};
       } elsif (defined($json->{'data'})) {
 #printf STDERR "PARSE_IMGUR_IMAGE: success == true\n";
 #printf STDERR "PARSE_IMGUR_IMAGE: Content: '%s'\n", Dumper($json);
         my $d = $json->{'data'};
-        if (defined($d->{'title'}) or defined($d->{'description'}) or (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true')) {
+        if (defined($d->{'title'}) or defined($d->{'description'}) or (defined($d->{'nsfw'}) and $d->{'nsfw'})) {
           my $blurb = "[ Imgur Image ] - ";
           if (defined($d->{'title'})) {
             $blurb .= "Title: " . trunc_str($d->{'title'}, 256);
           } else {
             $blurb .= "<no title>";
           }
-          if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
+          if (defined($d->{'nsfw'}) and $d->{'nsfw'}) {
             $blurb .= " | *NSFW*";
           }
-          if (defined($d->{'animated'}) and $d->{'animated'} eq 'true') {
+          if (defined($d->{'animated'}) and $d->{'animated'}) {
             $blurb .= " | *ANIMATED*";
           }
           if (defined($d->{'description'})) {
@@ -568,7 +569,7 @@ printf STDERR "PARSE_IMGUR_ALBUM: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
       push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
     } else {
 #printf STDERR "PARSE_IMGUR_ALBUM: Got JSON?\n";
-      if (!defined($json->{'success'}) or $json->{'success'} ne 'true') {
+      if (!defined($json->{'success'}) or ! $json->{'success'}) {
 #printf STDERR "PARSE_IMGUR_ALBUM: No success, or it's not true?\n";
         push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'data'}{'error'};
       } elsif (defined($json->{'data'})) {
@@ -580,7 +581,7 @@ printf STDERR "PARSE_IMGUR_ALBUM: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-Err
         } else {
           $blurb .= "<no title>";
         }
-        if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
+        if (defined($d->{'nsfw'}) and $d->{'nsfw'}) {
           $blurb .= " | *NSFW* ";
         }
         if (defined($d->{'description'})) {
@@ -655,7 +656,7 @@ printf STDERR "PARSE_IMGUR_GALLERY: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-E
       push @params, 'irc_miggybot_url_error', $args, "Failed to parse JSON response";
     } else {
 #printf STDERR "PARSE_IMGUR_GALLERY: Got JSON?\n";
-      if (!defined($json->{'success'}) or $json->{'success'} ne 'true') {
+      if (!defined($json->{'success'}) or ! $json->{'success'}) {
 #printf STDERR "PARSE_IMGUR_GALLERY: No success, or it's not true?\n";
         push @params, 'irc_miggybot_url_error', $args, "JSON failed: " . $json->{'data'}{'error'};
       } elsif (defined($json->{'data'})) {
@@ -670,7 +671,7 @@ printf STDERR "PARSE_IMGUR_GALLERY: X-PCCH-Errmsg: %s\n", $res->header('X-PCCH-E
         if (defined($d->{'account_url'}) and $d->{'account_url'} ne 'null') {
           $blurb .= " | User: " . $d->{'account_url'};
         }
-        if (defined($d->{'nsfw'}) and $d->{'nsfw'} eq 'true') {
+        if (defined($d->{'nsfw'}) and $d->{'nsfw'}) {
           $blurb .= " | *NSFW* ";
         }
         if (defined($d->{'description'})) {
